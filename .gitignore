@@ -2,6 +2,9 @@
 logs
 *.log
 
+#cloud9 stuff
+.c9/*
+
 # Runtime data
 pids
 *.pid
