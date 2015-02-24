@@ -29,3 +29,6 @@ node_modules
 
 # Users Environment Variables
 .lock-wscript
+
+# api_engine submodule
+api_engine
