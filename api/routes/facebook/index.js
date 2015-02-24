@@ -1,4 +1,5 @@
 var Facebook = require('../../utilities/facebook/facebook');
+var fs       = reuire('fs');
 
 exports = module.exports = function(config, options) {
     var app = config.app;
@@ -25,8 +26,24 @@ exports = module.exports = function(config, options) {
                     }
                 });
             }
-        }
+        };
+        cycle(0);
     };
+    
+    app.all("/payobject/:id", function(req, res) {
+       // normally perform lookup on the id provided and return that rendered, but for testing just render the template
+       
+       var data = {
+           title    : "Test Currency",
+           description  : "test currency for fb testing",
+           url      : "", // url of this goes here...
+           plural   : "Test Currencies",
+           usd      : "1.99",
+           gbp      : "0.80"
+       };
+       
+       return res.render(fs.readFileSync('../../templates/object_payment.ejs', 'utf8'), data);
+    });
 
     app.all("/payments", function(req, res) {
 
