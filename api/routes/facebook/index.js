@@ -21,7 +21,7 @@ exports = module.exports = function(config, options) {
                         result._id = result.id;
                         delete result.id;
                         // do update here...
-                        
+                        console.log("[facebook/getPaymentsInfo]", "inserting:", result);
                         cycle(index + 1);
                     }
                 });
@@ -31,42 +31,70 @@ exports = module.exports = function(config, options) {
     };
     
     app.all("/facebook/payobject/:id", function(req, res) {
-       // normally perform lookup on the id provided and return that rendered, but for testing just render the template
-       
-       var data = {
-           title    : "Test Currency",
-           description  : "test currency for fb testing",
-           url      : "", // url of this goes here...
-           plural   : "Test Currencies",
-           usd      : "1.99",
-           gbp      : "0.80"
-       };
-       
-       return res.render(fs.readFileSync('../../templates/object_payment.ejs', 'utf8'), data);
+        // need to watch for the challenge request
+        var fb_mode = req.query['hub.mode'] || 0;
+        var id = req.param('id')||-1;
+        
+        if (fb_mode) {
+            var statusCode = 200;
+            var responseText = "ok";
+            if (fb_mode == "subscribe") {
+                // check the verify token
+				var verify = req.query['hub.verify_token']||'';
+                if (verify != config.facebook.verification_token) {
+                    statusCode = 400;
+                    responseText = "invalid verification token sent";
+                }
+                else {
+                    responseText = req.query['hub.challenge'] || "not-ok";
+                }
+            }
+            else {
+                console.log("[facebook/payments]", "unhandled fb mode", fb_mode);
+                statusCode = 400;
+                responseText = "not-ok";
+            }
+            res.writeHead(statusCode);
+            res.end(responseText);
+        } else {
+           // normally perform lookup on the id provided and return that rendered, but for testing just render the template
+           
+           var data = {
+               title    : "Test Currency",
+               description  : "test currency for fb testing",
+               url      : "http://" + req.get("host") + "/facebook/payobject/" + id, // url of this goes here...
+               plural   : "Test Currencies",
+               usd      : "1.99",
+               gbp      : "0.80"
+           };
+           return res.render(__dirname + '/../../templates/object_payment.ejs', data);
+        }
     });
 
-    app.all("/facebook/payments/:mode/:challenge/:token", function(req, res) {
-
+    app.all("/facebook/payments", function(req, res) {
         var fb_mode = req.query['hub.mode'] || 0;
-        
-        console.log("[facebook/payments]", "in endpoint");
 
         // set response values
         var statusCode = 200;
         var responseText = "ok";
 
         if (!fb_mode) {
-            var jsonBody = JSON.parse(req.rawBody);
-
-            if (jsonBody.object && jsonBody.object == "payments") {
-                for (var i in jsonBody.entry) {
-                    // insert into real-time updates collection
+            if (req.rawBody) {
+                var jsonBody = JSON.parse(req.rawBody);
+                if (jsonBody.object && jsonBody.object == "payments") {
+                    for (var i in jsonBody.entry) {
+                        // insert into real-time updates collection
+                    }
+                    
+                    // get info from fb for each entry
+                    getPaymentsInfo(jsonBody.entry);
+                } else {
+                    console.error('[facebook/payments]', 'unknown request', jsonBody);
+                    statusCode = 400;
+                    responseText = 'unknown request';
                 }
-                
-                // get info from fb for each entry
-                getPaymentsInfo(jsonBody.entry);
             } else {
-                console.error('[facebook/payments]', 'unknown request', jsonBody);
+                console.error('[facebook/payments]', 'unknown request');
                 statusCode = 400;
                 responseText = 'unknown request';
             }
