@@ -9,7 +9,7 @@ exports = module.exports = function(collectionName, config, options)
 {
     var collection;
     
-    var notificationsCollection = require(path.join(__dirname, '../base/model'))(collectionName, 
+    var notificationsCollection = require(config.baseModel)(collectionName, 
         function(config)
         {
             collection = config.collection;

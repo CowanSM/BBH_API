@@ -2,12 +2,12 @@ var http = require('http');
 var https = require('https');
 var _ = require("underscore");
 
-var httpUtils = require("../utilities/httpUtils");
-
 exports = module.exports = function(config, options)
 {
     var app = config.app;
     
+    var httpUtils = config.httpUtils;
+
     app.post('/createUser', function(req, res) 
     {
        console.log('createUser');
