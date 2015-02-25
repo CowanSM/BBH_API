@@ -1,5 +1,5 @@
 var Facebook = require('../../utilities/facebook/facebook');
-var fs       = reuire('fs');
+var fs       = require('fs');
 
 exports = module.exports = function(config, options) {
     var app = config.app;
@@ -30,7 +30,7 @@ exports = module.exports = function(config, options) {
         cycle(0);
     };
     
-    app.all("/payobject/:id", function(req, res) {
+    app.all("/facebook/payobject/:id", function(req, res) {
        // normally perform lookup on the id provided and return that rendered, but for testing just render the template
        
        var data = {
@@ -45,9 +45,11 @@ exports = module.exports = function(config, options) {
        return res.render(fs.readFileSync('../../templates/object_payment.ejs', 'utf8'), data);
     });
 
-    app.all("/payments", function(req, res) {
+    app.all("/facebook/payments/:mode/:challenge/:token", function(req, res) {
 
-        var fb_mode = req.quer['hub.mode'] || 0;
+        var fb_mode = req.query['hub.mode'] || 0;
+        
+        console.log("[facebook/payments]", "in endpoint");
 
         // set response values
         var statusCode = 200;
@@ -89,7 +91,7 @@ exports = module.exports = function(config, options) {
         }
 
         // send reply
-        res.writeHead(statusCode);
+        res.writeHead(statusCode, {"Content-Type": "text/plain"});
         res.end(responseText);
     });
 
