@@ -9,6 +9,8 @@ exports = module.exports = function(config, options) {
     var paymentCollection = require(mongoModel)(prefix + 'payemnts', function(){}, config, options);
     var rtuCollection = require(mongoModel)(prefix + 'rtu', function(){}, config, options);
     var paymentObjectsCollection = require(mongoModel)(prefix + 'paymentObjects', function(){}, config, options);
+    var userCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
+    var userAccessToken = "";
 
     var getPaymentsInfo = function(entries) {
         // set up recursive cycle method
@@ -17,7 +19,7 @@ exports = module.exports = function(config, options) {
                 console.log('[facebook/getPaymentsInfo]', 'finished processing payments');
             }
             else {
-                Facebook.graphRequest('GET', '/' + entries[index].id, null, function(err, result) {
+                Facebook.graphRequest('GET', '/' + entries[index].id, {access_token : userAccessToken}, function(err, result) {
                     if (err || !result) {
                         console.error('[facebook/getPaymentsInfo]', 'error with facebook request', err||'no result');
                         // continue cycle
@@ -37,6 +39,30 @@ exports = module.exports = function(config, options) {
         };
         cycle(0);
     };
+    
+    app.post("/facebook/login", function(req, res) {
+       var accessToken = req.param("access_token")||"";
+       var userId = req.param("user_id")||"";
+       var expirationToken = req.param("expires")||"";
+       
+       // just stick it into mongo for now
+       if (accessToken) {
+           userAccessToken = accessToken;
+           var user = {
+             access_token       : accessToken,
+             fbid               : userId,
+             expiresAt          : expirationToken
+           };
+           userCollection.update({'fbid' : userId}, user, {upsert : true}, function(err, result) {
+              if (err) {
+               console.error('error upserting user into db:', err);   
+              }
+           });
+       }
+       
+        res.writeHead(200);
+        res.end('ok');
+    });
     
     // endpoint for getting a payment object from mongo
     app.all("/facebook/payobject/:id", function(req, res) {

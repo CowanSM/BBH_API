@@ -128,7 +128,7 @@ module.exports = function (config) {
   
   FacebookClient.graphRequest = function (method, path, params, callback) {
     if (!params) params = {};
-    params["access_token"] = this.secret;
+    // params["access_token"] = this.secret;
     doRequest(method, this.graph_url + path + "?" + querystring.stringify(params), callback);
   };
   
