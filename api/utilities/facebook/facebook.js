@@ -28,6 +28,9 @@ function doRequest(method, url, callback) {
     }
   };
   
+  console.log('sending req to facebook, with options:');
+  console.dir(options);
+  
   if (method == 'POST') {
     options.headers['Content-Length'] = '0';
   }
