@@ -95,7 +95,7 @@ exports = module.exports = function(config, options) {
 
         if (!fb_mode) {
             if (req.body) {
-                var jsonBody = JSON.parse(req.body);
+                var jsonBody = req.body;
                 if (jsonBody.object && jsonBody.object == "payments") {
                     for (var i in jsonBody.entry) {
                         // insert into real-time updates collection
