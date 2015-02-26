@@ -1,8 +1,14 @@
 var Facebook = require('../../utilities/facebook/facebook');
-var fs       = require('fs');
 
 exports = module.exports = function(config, options) {
     var app = config.app;
+    var mongoModel = __dirname + '/../../../api_engine/base/model';
+    var prefix = config.mongo.prefix||'';
+    
+    // get our collections
+    var paymentCollection = require(mongoModel)(prefix + 'payemnts', function(){}, config, options);
+    var rtuCollection = require(mongoModel)(prefix + 'rtu', function(){}, config, options);
+    var paymentObjectsCollection = require(mongoModel)(prefix + 'paymentObjects', function(){}, config, options);
 
     var getPaymentsInfo = function(entries) {
         // set up recursive cycle method
@@ -21,8 +27,10 @@ exports = module.exports = function(config, options) {
                         result._id = result.id;
                         delete result.id;
                         // do update here...
-                        console.log("[facebook/getPaymentsInfo]", "inserting:", result);
-                        cycle(index + 1);
+                        paymentCollection.update({_id : result._id}, result, {upsert : true}, function(err, res) {
+                            if (err) console.log("[facebook/getPaymentsInfo]", "error upserting result", result._id, "err:", err);
+                            cycle(index + 1);
+                        });
                     }
                 });
             }
@@ -30,6 +38,7 @@ exports = module.exports = function(config, options) {
         cycle(0);
     };
     
+    // endpoint for getting a payment object from mongo
     app.all("/facebook/payobject/:id", function(req, res) {
         // need to watch for the challenge request
         var fb_mode = req.query['hub.mode'] || 0;
@@ -58,16 +67,22 @@ exports = module.exports = function(config, options) {
             res.end(responseText);
         } else {
            // normally perform lookup on the id provided and return that rendered, but for testing just render the template
-           
-           var data = {
-               title    : "Test Currency",
-               description  : "test currency for fb testing",
-               url      : "http://" + req.get("host") + "/facebook/payobject/" + id, // url of this goes here...
-               plural   : "Test Currencies",
-               usd      : "1.99",
-               gbp      : "0.80"
-           };
-           return res.render(__dirname + '/../../templates/object_payment.ejs', data);
+           paymentObjectsCollection.find({_id: id}, function(err, result) {
+               if (err || !result) {
+                    console.error('[facebook/paymentObject]', 'unable to get object with id', id, 'err:', err||'no object with that id');   
+                    res.writeHead(400);
+                    res.end('no object found with given id');
+               } else {
+                   var data = {
+                       title        : result.title,
+                       description  : result.description,
+                       plural       : result.plural,
+                       usd          : result.usd,
+                       url          : 'http://' + req.get('host') + '/facebook/payobject/' + id,
+                   };
+                   return res.render(__dirname + '/../../templates/object_payment.ejs', data);
+               }
+           });
         }
     });
 
@@ -84,6 +99,9 @@ exports = module.exports = function(config, options) {
                 if (jsonBody.object && jsonBody.object == "payments") {
                     for (var i in jsonBody.entry) {
                         // insert into real-time updates collection
+                        rtuCollection.insert(jsonBody.entry[i], function(err, result) {
+                            if (err) console.log('[facebook/payments]', 'error inserting into rtu collection', err);
+                        });
                     }
                     
                     // get info from fb for each entry
