@@ -94,6 +94,7 @@ exports = module.exports = function(config, options) {
         var responseText = "ok";
 
         if (!fb_mode) {
+            console.log('rawbody:', req.rawBody, req.rawbody);
             if (req.rawBody) {
                 var jsonBody = JSON.parse(req.rawBody);
                 if (jsonBody.object && jsonBody.object == "payments") {
