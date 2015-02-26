@@ -1,9 +1,9 @@
-var Facebook = require('../../utilities/facebook/facebook');
-
 exports = module.exports = function(config, options) {
     var app = config.app;
     var mongoModel = __dirname + '/../../../api_engine/base/model';
     var prefix = config.mongo.prefix||'';
+    
+    var Facebook = require('../../utilities/facebook/facebook')(config);
     
     // get our collections
     var paymentCollection = require(mongoModel)(prefix + 'payemnts', function(){}, config, options);
