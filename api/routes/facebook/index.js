@@ -19,7 +19,7 @@ exports = module.exports = function(config, options) {
                 console.log('[facebook/getPaymentsInfo]', 'finished processing payments');
             }
             else {
-                Facebook.graphRequest('GET', '/' + entries[index].id, {app_access_token : config.facebook.secret_key}, function(err, result) {
+                Facebook.graphRequest('GET', '/' + entries[index].id, null, function(err, result) {
                     if (err || !result) {
                         console.error('[facebook/getPaymentsInfo]', 'error with facebook request', err||'no result');
                         // continue cycle
