@@ -19,7 +19,7 @@ exports = module.exports = function(config, options) {
                 console.log('[facebook/getPaymentsInfo]', 'finished processing payments');
             }
             else {
-                Facebook.graphRequest('GET', '/' + entries[index].id, {access_token : userAccessToken}, function(err, result) {
+                Facebook.graphRequest('GET', '/' + entries[index].id, null, function(err, result) {
                     if (err || !result) {
                         console.error('[facebook/getPaymentsInfo]', 'error with facebook request', err||'no result');
                         // continue cycle
@@ -41,9 +41,9 @@ exports = module.exports = function(config, options) {
     };
     
     app.post("/facebook/login", function(req, res) {
-       var accessToken = req.param("access_token")||"";
-       var userId = req.param("user_id")||"";
-       var expirationToken = req.param("expires")||"";
+       var accessToken = req.params("access_token")||"";
+       var userId = req.params("user_id")||"";
+       var expirationToken = req.params("expires")||"";
        
        // just stick it into mongo for now
        if (accessToken) {
