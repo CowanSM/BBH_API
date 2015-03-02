@@ -133,7 +133,7 @@ module.exports = function (config) {
     } else if (!params) {
       params = {};
     }
-    params["app_access_token"] = this.app_id + "|" + this.secret;
+    params["access_token"] = this.app_id + "|" + this.secret;
     doRequest(method, this.graph_url + path + "?" + querystring.stringify(params), callback);
   };
   
