@@ -35,7 +35,7 @@ function doRequest(method, url, appid, restkey, form, callback) {
     }
   };
   
-  console.log('sending req to facebook, with options:');
+  console.log('sending req to parse, with options:');
   console.dir(options);
   
   if (method == 'POST') {
@@ -188,7 +188,7 @@ module.exports = function(config) {
          callback('missing param(s)');
        } catch (ex) {}
       } else {
-        var url = 'users';
+        var url = base_url + 'users';
         var form = {
           facebook  : {
             'id'             : fbid,
