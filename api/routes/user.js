@@ -42,7 +42,7 @@ exports = module.exports = function(config, options)
                     };
                     for (var i in serviceResults) {
                         var sresult = serviceResults[i];
-                        var name = sresult.name;
+                        var name = sresult.name.toString();
                         delete sresult.name;
                         user[name] = sresult;
                     }
