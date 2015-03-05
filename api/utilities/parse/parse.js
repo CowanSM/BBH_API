@@ -135,7 +135,7 @@ module.exports = function(config) {
     var ParseClient = {};
     
     var app_id   = config.parse.applicationId;
-    var rest_key = config.parse.restApikey;
+    var rest_key = config.parse.restApiKey;
     var base_url = "https://api.parse.com/1/";
     var name     = 'Parse';
     
