@@ -21,9 +21,9 @@ exports = module.exports = function(config, options)
     
     // need a auth-with-facebook endpoint
     app.post('/users/authWithFacebook', function(req, res) {
-       var accessToken  = req.params('accessToken')||undefined;
-       var fbid         = req.params('fbid')||undefined;
-       var expiration   = req.params('expiration')||undefined;
+       var accessToken  = req.body['accessToken']||undefined;
+       var fbid         = req.body['fbid']||undefined;
+       var expiration   = req.body['expiration']||undefined;
        
        if (!accessToken || !fbid || !expiration) {
         console.error('[/authWithFacebook]', 'called with missing param(s)');
@@ -64,6 +64,10 @@ exports = module.exports = function(config, options)
                            if (ret.expiration) result.expires = ret.expiration;
                            serviceResults.push(result);
                            cycle(index + 1);
+                          } else {
+                           // exit with a 400
+                           res.writeHead(400);
+                           res.end(JSON.stringify({'error' : 'failed to login to: ' + service.name}));
                           }
                         });
                     } else {

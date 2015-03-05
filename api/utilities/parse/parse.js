@@ -35,12 +35,16 @@ function doRequest(method, url, appid, restkey, form, callback) {
     }
   };
   
-  console.log('sending req to facebook, with options:');
-  console.dir(options);
-  
   if (method == 'POST') {
     options.headers['Content-Length'] = '0';
     options.headers['Content-Type'] = 'application/json';
+  }
+  
+  console.log('sending req to parse, with options:');
+  console.dir(options);
+  
+  if (form) {
+   console.log('sending json:', JSON.stringify(form)); 
   }
   
   options.agent = getAgent(options);
@@ -135,7 +139,7 @@ module.exports = function(config) {
     var ParseClient = {};
     
     var app_id   = config.parse.applicationId;
-    var rest_key = config.parse.restApikey;
+    var rest_key = config.parse.restApiKey;
     var base_url = "https://api.parse.com/1/";
     var name     = 'Parse';
     
@@ -188,12 +192,14 @@ module.exports = function(config) {
          callback('missing param(s)');
        } catch (ex) {}
       } else {
-        var url = 'users';
+        var url = base_url + 'users';
         var form = {
-          facebook  : {
-            'id'             : fbid,
-            'access_token'   : accesstoken,
-            'expiration_date': expiration
+          authData  : {
+            facebook  : {
+              'id'             : fbid,
+              'access_token'   : accesstoken,
+              'expiration_date': expiration
+            }
           }
         };
         doRequest('POST', url, app_id, rest_key, form, function(err, result) {
