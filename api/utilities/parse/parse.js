@@ -35,12 +35,16 @@ function doRequest(method, url, appid, restkey, form, callback) {
     }
   };
   
-  console.log('sending req to parse, with options:');
-  console.dir(options);
-  
   if (method == 'POST') {
     options.headers['Content-Length'] = '0';
     options.headers['Content-Type'] = 'application/json';
+  }
+  
+  console.log('sending req to parse, with options:');
+  console.dir(options);
+  
+  if (form) {
+   console.log('sending json:', JSON.stringify(form)); 
   }
   
   options.agent = getAgent(options);
