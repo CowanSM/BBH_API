@@ -40,7 +40,8 @@ exports = module.exports = function(config, options)
                         'fbid'          : fbid,
                         'accessToken'   : accessToken
                     };
-                    for (var sresult in serviceResults) {
+                    for (var i in serviceResults) {
+                        var sresult = serviceResults[i];
                         var name = sresult.name;
                         delete sresult.name;
                         user[name] = sresult;
@@ -67,6 +68,8 @@ exports = module.exports = function(config, options)
                              uid        : ret.uid
                            };
                            if (ret.expiration) result.expires = ret.expiration;
+                           console.log('adding to service results:');
+                           console.dir(result);
                            serviceResults.push(result);
                            cycle(index + 1);
                           } else {
