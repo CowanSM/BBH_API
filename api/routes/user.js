@@ -36,12 +36,17 @@ exports = module.exports = function(config, options)
                if (index >= userServices.length) {
                     // finished logging into the various services via facebook...
                     // store info into mongo user table
-                    var user = {};
+                    var user = {
+                        'fbid'          : fbid,
+                        'accessToken'   : accessToken
+                    };
                     for (var sresult in serviceResults) {
                         var name = sresult.name;
                         delete sresult.name;
                         user[name] = sresult;
                     }
+                    console.log('upserting user:');
+                    console.dir(user);
                     usersCollection.update({'fbid' : fbid}, user, {upsert : true}, function(err, result) {
                         if (err) {
                          console.error('[/authWithFacebook]', 'error upserting into mongo:', err);
