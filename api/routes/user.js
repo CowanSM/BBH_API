@@ -20,7 +20,7 @@ exports = module.exports = function(config, options)
     var usersCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
     
     // need a auth-with-facebook endpoint
-    app.post('/authWithFacebook', function(req, res) {
+    app.post('/users/authWithFacebook', function(req, res) {
        var accessToken  = req.params('accessToken')||undefined;
        var fbid         = req.params('fbid')||undefined;
        var expiration   = req.params('expiration')||undefined;
