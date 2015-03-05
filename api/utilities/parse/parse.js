@@ -36,7 +36,7 @@ function doRequest(method, url, appid, restkey, form, callback) {
   };
   
   if (method == 'POST') {
-    options.headers['Content-Length'] = '0';
+    options.headers['Content-Length'] = JSON.stringify(form).length;
     options.headers['Content-Type'] = 'application/json';
   }
   
