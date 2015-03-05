@@ -6,7 +6,74 @@ exports = module.exports = function(config, options)
 {
     var app = config.app;
     
+    var userServices = config.services||[];
+    
+    // temporary until V checks in some stuff:
+    userServices.push(require('../utilities/parse/parse')(config));
+    /////////////////////////////////////////////////////////////// 
+    
     var httpUtils = config.httpUtils;
+    
+    // mongo stuff
+    var prefix = config.mongo.prefix||'';
+    var mongoModel = __dirname + '/../../api_engine/base/model';
+    var usersCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
+    
+    // need a auth-with-facebook endpoint
+    app.post('/authWithFacebook', function(req, res) {
+       var accessToken  = req.params('accessToken')||undefined;
+       var fbid         = req.params('fbid')||undefined;
+       var expiration   = req.params('expiration')||undefined;
+       
+       if (!accessToken || !fbid || !expiration) {
+        console.error('[/authWithFacebook]', 'called with missing param(s)');
+        // write back 400
+        res.writeHead(400);
+        res.end(JSON.stringify({'error' : 'mising prameters'}));
+       } else {
+           var serviceResults = [];
+           var cycle = function(index) {
+               if (index >= userServices.length) {
+                    // finished logging into the various services via facebook...
+                    // store info into mongo user table
+                    var user = {};
+                    for (var sresult in serviceResults) {
+                        var name = sresult.name;
+                        delete sresult.name;
+                        user[name] = sresult;
+                    }
+                    usersCollection.update({'fbid' : fbid}, user, {upsert : true}, function(err, result) {
+                        if (err) {
+                         console.error('[/authWithFacebook]', 'error upserting into mongo:', err);
+                        }
+                        // 200 response
+                        res.writeHead(200);
+                        res.end('ok');
+                    });
+                } else {
+                    var service = userServices[index];
+                    if (service.AuthWithFacebook) {
+                        service.AuthWithFacebook(accessToken, fbid, expiration, function(err, ret) {
+                          if (!err) {
+                           var result = {
+                             name       : service.name,
+                             username   : ret.username,
+                             session    : ret.token,
+                             uid        : ret.uid
+                           };
+                           if (ret.expiration) result.expires = ret.expiration;
+                           serviceResults.push(result);
+                           cycle(index + 1);
+                          }
+                        });
+                    } else {
+                        cycle(index + 1);   
+                    }
+               }
+           };
+           cycle(0);
+       }
+    });
 
     app.post('/createUser', function(req, res) 
     {
@@ -109,216 +176,217 @@ exports = module.exports = function(config, options)
         });
         
     })
-
-    app.post('/addToRoom', function(req, res) 
-    {
-        console.log('addToRoom');
+    
+    // not sure any of the below are necessary? if so move into ParseClient
+    // app.post('/addToRoom', function(req, res) 
+    // {
+    //     console.log('addToRoom');
         
-        var username = req.body.username;
-        var room = req.body.room;
+    //     var username = req.body.username;
+    //     var room = req.body.room;
         
-        var installationReqOptions = 
-        {
-            hostname     : 'api.parse.com',
-            path         : '/1/installations?where='+JSON.stringify( {username:username} ),
-            method       : 'GET',
-            headers      : {
-               'X-Parse-Application-Id'     : config.parse.applicationId,
-               'X-Parse-Master-Key'         : config.parse.masterKey,
-               'Content-Type'               : 'application/json'
-            }
-        };
+    //     var installationReqOptions = 
+    //     {
+    //         hostname     : 'api.parse.com',
+    //         path         : '/1/installations?where='+JSON.stringify( {username:username} ),
+    //         method       : 'GET',
+    //         headers      : {
+    //           'X-Parse-Application-Id'     : config.parse.applicationId,
+    //           'X-Parse-Master-Key'         : config.parse.masterKey,
+    //           'Content-Type'               : 'application/json'
+    //         }
+    //     };
         
-        httpUtils.httpsRequest(installationReqOptions, function(installationReq, error) 
-        {
-            if(error)
-                res.send(error);
-            else
-            {
-                // console.log(installationReq);
+    //     httpUtils.httpsRequest(installationReqOptions, function(installationReq, error) 
+    //     {
+    //         if(error)
+    //             res.send(error);
+    //         else
+    //         {
+    //             // console.log(installationReq);
              
-                if(installationReq.length == 0)
-                {
-                    res.send(JSON.stringify({error:'query found no results for username : ' + username}));
-                    return;
-                }
+    //             if(installationReq.length == 0)
+    //             {
+    //                 res.send(JSON.stringify({error:'query found no results for username : ' + username}));
+    //                 return;
+    //             }
                 
-                var installationReqJSON = JSON.parse(installationReq).results;
+    //             var installationReqJSON = JSON.parse(installationReq).results;
                 
-                var installation = installationReqJSON[0];
-                var channels = installation.channels||[];
+    //             var installation = installationReqJSON[0];
+    //             var channels = installation.channels||[];
                 
-                if(channels.indexOf(room) != -1)
-                {
-                    res.send(JSON.stringify({error:'user already registered to room : ' + room}));
-                    return;
-                }
+    //             if(channels.indexOf(room) != -1)
+    //             {
+    //                 res.send(JSON.stringify({error:'user already registered to room : ' + room}));
+    //                 return;
+    //             }
                 
-                channels.push(room);
+    //             channels.push(room);
                 
-                var putData = 
-                {
-                    channels    : channels
-                };
+    //             var putData = 
+    //             {
+    //                 channels    : channels
+    //             };
                 
-                var updateInstallationReqOptions = 
-                {
-                    hostname     : 'api.parse.com',
-                    path         : '/1/installations/'+installation.objectId,
-                    method       : 'PUT',
-                    headers      : {
-                        'X-Parse-Application-Id'     : config.parse.applicationId,
-                        'X-Parse-REST-API-Key'       : config.parse.restApiKey,
-                        'Content-Type'               : 'application/json'
-                    }
-                };
+    //             var updateInstallationReqOptions = 
+    //             {
+    //                 hostname     : 'api.parse.com',
+    //                 path         : '/1/installations/'+installation.objectId,
+    //                 method       : 'PUT',
+    //                 headers      : {
+    //                     'X-Parse-Application-Id'     : config.parse.applicationId,
+    //                     'X-Parse-REST-API-Key'       : config.parse.restApiKey,
+    //                     'Content-Type'               : 'application/json'
+    //                 }
+    //             };
                 
-                httpUtils.httpsRequest(updateInstallationReqOptions, putData, function(reqResponse, error) 
-                {
-                    if(error)
-                        res.send(error);
-                    else
-                        res.send(reqResponse);
-                });
-            }
-        })
-    });
+    //             httpUtils.httpsRequest(updateInstallationReqOptions, putData, function(reqResponse, error) 
+    //             {
+    //                 if(error)
+    //                     res.send(error);
+    //                 else
+    //                     res.send(reqResponse);
+    //             });
+    //         }
+    //     })
+    // });
 
-    app.post('/removeFromRoom', function(req, res) 
-    {
-        console.log('removeFromRoom');
+    // app.post('/removeFromRoom', function(req, res) 
+    // {
+    //     console.log('removeFromRoom');
         
-        var username = req.body.username;
-        var room = req.body.room;
+    //     var username = req.body.username;
+    //     var room = req.body.room;
         
-        var installationReqOptions = 
-        {
-            hostname     : 'api.parse.com',
-            path         : '/1/installations?where='+JSON.stringify( {username:username} ),
-            method       : 'GET',
-            headers      : {
-               'X-Parse-Application-Id'     : config.parse.applicationId,
-               'X-Parse-Master-Key'         : config.parse.masterKey,
-               'Content-Type'               : 'application/json'
-            }
-        };
+    //     var installationReqOptions = 
+    //     {
+    //         hostname     : 'api.parse.com',
+    //         path         : '/1/installations?where='+JSON.stringify( {username:username} ),
+    //         method       : 'GET',
+    //         headers      : {
+    //           'X-Parse-Application-Id'     : config.parse.applicationId,
+    //           'X-Parse-Master-Key'         : config.parse.masterKey,
+    //           'Content-Type'               : 'application/json'
+    //         }
+    //     };
         
-        httpUtils.httpsRequest(installationReqOptions, function(installationReq, error) 
-        {
-            if(error)
-                res.send(error);
-            else
-            {
-                // console.log(installationReq);
+    //     httpUtils.httpsRequest(installationReqOptions, function(installationReq, error) 
+    //     {
+    //         if(error)
+    //             res.send(error);
+    //         else
+    //         {
+    //             // console.log(installationReq);
              
-                if(installationReq.length == 0)
-                {
-                    res.send(JSON.stringify({error:'query found no results for username : ' + username}));
-                    return;
-                }
+    //             if(installationReq.length == 0)
+    //             {
+    //                 res.send(JSON.stringify({error:'query found no results for username : ' + username}));
+    //                 return;
+    //             }
                 
-                var installationReqJSON = JSON.parse(installationReq).results;
+    //             var installationReqJSON = JSON.parse(installationReq).results;
                 
-                var installation = installationReqJSON[0];
-                var channels = installation.channels||[];
+    //             var installation = installationReqJSON[0];
+    //             var channels = installation.channels||[];
                 
-                var indexOfRoom = _.indexOf(channels,room);
+    //             var indexOfRoom = _.indexOf(channels,room);
                 
-                if(indexOfRoom != -1)
-                {
-                    channels.splice(indexOfRoom, 1);    
-                }
+    //             if(indexOfRoom != -1)
+    //             {
+    //                 channels.splice(indexOfRoom, 1);    
+    //             }
                 
-                var putData = 
-                {
-                    channels    : channels
-                };
+    //             var putData = 
+    //             {
+    //                 channels    : channels
+    //             };
                 
-                var updateInstallationReqOptions = 
-                {
-                    hostname     : 'api.parse.com',
-                    path         : '/1/installations/'+installation.objectId,
-                    method       : 'PUT',
-                    headers      : {
-                        'X-Parse-Application-Id'     : config.parse.applicationId,
-                        'X-Parse-REST-API-Key'       : config.parse.restApiKey,
-                        'Content-Type'               : 'application/json'
-                    }
-                };
+    //             var updateInstallationReqOptions = 
+    //             {
+    //                 hostname     : 'api.parse.com',
+    //                 path         : '/1/installations/'+installation.objectId,
+    //                 method       : 'PUT',
+    //                 headers      : {
+    //                     'X-Parse-Application-Id'     : config.parse.applicationId,
+    //                     'X-Parse-REST-API-Key'       : config.parse.restApiKey,
+    //                     'Content-Type'               : 'application/json'
+    //                 }
+    //             };
                 
-                httpUtils.httpsRequest(updateInstallationReqOptions, putData, function(reqResponse, error) 
-                {
-                    if(error)
-                        res.send(error);
-                    else
-                        res.send(reqResponse);
-                });
-            }
-        })
-    });
+    //             httpUtils.httpsRequest(updateInstallationReqOptions, putData, function(reqResponse, error) 
+    //             {
+    //                 if(error)
+    //                     res.send(error);
+    //                 else
+    //                     res.send(reqResponse);
+    //             });
+    //         }
+    //     })
+    // });
     
     
-    app.post('/exitAllRooms', function(req, res) 
-    {
-        console.log('exitAllRooms');
+    // app.post('/exitAllRooms', function(req, res) 
+    // {
+    //     console.log('exitAllRooms');
         
-        var username = req.body.username;
+    //     var username = req.body.username;
         
-        var installationReqOptions = 
-        {
-            hostname     : 'api.parse.com',
-            path         : '/1/installations?where='+JSON.stringify( {username:username} ),
-            method       : 'GET',
-            headers      : {
-               'X-Parse-Application-Id'     : config.parse.applicationId,
-               'X-Parse-Master-Key'         : config.parse.masterKey,
-               'Content-Type'               : 'application/json'
-            }
-        };
+    //     var installationReqOptions = 
+    //     {
+    //         hostname     : 'api.parse.com',
+    //         path         : '/1/installations?where='+JSON.stringify( {username:username} ),
+    //         method       : 'GET',
+    //         headers      : {
+    //           'X-Parse-Application-Id'     : config.parse.applicationId,
+    //           'X-Parse-Master-Key'         : config.parse.masterKey,
+    //           'Content-Type'               : 'application/json'
+    //         }
+    //     };
         
-        httpUtils.httpsRequest(installationReqOptions, function(installationReq, error) 
-        {
-            if(error)
-                res.send(error);
-            else
-            {
-                // console.log(installationReq);
+    //     httpUtils.httpsRequest(installationReqOptions, function(installationReq, error) 
+    //     {
+    //         if(error)
+    //             res.send(error);
+    //         else
+    //         {
+    //             // console.log(installationReq);
              
-                if(installationReq.length == 0)
-                {
-                    res.send(JSON.stringify({error:'query found no results for username : ' + username}));
-                    return;
-                }
+    //             if(installationReq.length == 0)
+    //             {
+    //                 res.send(JSON.stringify({error:'query found no results for username : ' + username}));
+    //                 return;
+    //             }
                 
-                var installationReqJSON = JSON.parse(installationReq).results;
+    //             var installationReqJSON = JSON.parse(installationReq).results;
                 
-                var installation = installationReqJSON[0];
+    //             var installation = installationReqJSON[0];
                 
-                var putData = 
-                {
-                    channels    : [""]
-                };
+    //             var putData = 
+    //             {
+    //                 channels    : [""]
+    //             };
                 
-                var updateInstallationReqOptions = 
-                {
-                    hostname     : 'api.parse.com',
-                    path         : '/1/installations/'+installation.objectId,
-                    method       : 'PUT',
-                    headers      : {
-                        'X-Parse-Application-Id'     : config.parse.applicationId,
-                        'X-Parse-REST-API-Key'       : config.parse.restApiKey,
-                        'Content-Type'               : 'application/json'
-                    }
-                };
+    //             var updateInstallationReqOptions = 
+    //             {
+    //                 hostname     : 'api.parse.com',
+    //                 path         : '/1/installations/'+installation.objectId,
+    //                 method       : 'PUT',
+    //                 headers      : {
+    //                     'X-Parse-Application-Id'     : config.parse.applicationId,
+    //                     'X-Parse-REST-API-Key'       : config.parse.restApiKey,
+    //                     'Content-Type'               : 'application/json'
+    //                 }
+    //             };
                 
-                httpUtils.httpsRequest(updateInstallationReqOptions, putData, function(reqResponse, error) 
-                {
-                    if(error)
-                        res.send(error);
-                    else
-                        res.send(reqResponse);
-                });
-            }
-        })
-    });
+    //             httpUtils.httpsRequest(updateInstallationReqOptions, putData, function(reqResponse, error) 
+    //             {
+    //                 if(error)
+    //                     res.send(error);
+    //                 else
+    //                     res.send(reqResponse);
+    //             });
+    //         }
+    //     })
+    // });
 }
