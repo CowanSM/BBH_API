@@ -190,10 +190,12 @@ module.exports = function(config) {
       } else {
         var url = base_url + 'users';
         var form = {
-          facebook  : {
-            'id'             : fbid,
-            'access_token'   : accesstoken,
-            'expiration_date': expiration
+          authData  : {
+            facebook  : {
+              'id'             : fbid,
+              'access_token'   : accesstoken,
+              'expiration_date': expiration
+            }
           }
         };
         doRequest('POST', url, app_id, rest_key, form, function(err, result) {

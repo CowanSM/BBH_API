@@ -64,6 +64,10 @@ exports = module.exports = function(config, options)
                            if (ret.expiration) result.expires = ret.expiration;
                            serviceResults.push(result);
                            cycle(index + 1);
+                          } else {
+                           // exit with a 400
+                           res.writeHead(400);
+                           res.end(JSON.stringify({'error' : 'failed to login to: ' + service.name}));
                           }
                         });
                     } else {
