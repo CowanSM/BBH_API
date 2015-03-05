@@ -141,7 +141,8 @@ module.exports = function(config) {
     var app_id   = config.parse.applicationId;
     var rest_key = config.parse.restApiKey;
     var base_url = "https://api.parse.com/1/";
-    var name     = 'Parse';
+    
+    ParseClient.name = 'Parse';
     
     ParseClient.AuthUser = function(username, password, callback) {
         if (!username || !password || !callback) {
