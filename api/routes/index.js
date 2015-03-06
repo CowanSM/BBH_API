@@ -19,7 +19,8 @@ exports = module.exports = function(config, options) {
           } else {
             // get the first result? then return the url as an octet-stream
             var entry = result[0];
-            
+            res.writeHead(200, {'Content-Type' : 'application/octet-stream'});
+            res.write(entry.uri);
           }
        });
     });
