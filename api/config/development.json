@@ -1,0 +1,30 @@
+{
+    "api_clusters"  : 2,
+    "mongo"         : {
+            "replicaset"  : true,
+            "hosts"       : [
+                    {
+                        "address" : "ds049191-a0.mongolab.com",
+                        "port"    : "49191"
+                    },
+                    {
+                        "address" : "ds049191-a1.mongolab.com",
+                        "port"    : "49191"
+                    }
+                ],
+            "db"          : "bbh_dev",
+            "user"        : "apiserver",
+            "pwd"         : "leviathan1.1",
+            "prefix"      : "sdev_"
+        },
+    "parse"         : {
+        "applicationId"     : "RFM6TJSgsS1BZi7jwD183EMi3Z9wvQh7SgvjASnJ",
+        "restApiKey"        : "awUxFdstJPIwjJ2S5d7MMKFwvyHgUCebOXpXymVG",
+        "masterKey"         : "GoZ5knBTkw6jicdjOkz0sNIQcU5RefhMRKzspRKr"
+    },
+    "facebook"      : {
+        "app_id"             : "216016135267272",
+        "secret_key"        : "c9bbf23c530f9804b41384d85a3e5c19",
+        "verification_token": "levverify"
+    }
+}
