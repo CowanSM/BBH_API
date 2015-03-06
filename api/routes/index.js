@@ -31,6 +31,8 @@ exports = module.exports = function(config, options) {
        var latest = req.body['latest']||true;
        var enabled = req.body['enabled']||true;
        
+       console.log('in uploadBuild:', uri, version, latest, enabled);
+       
        var addEntry = function() {
            var build = {
                 uri         : uri,
