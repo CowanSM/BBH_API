@@ -9,7 +9,7 @@ exports = module.exports = function(config, options)
     var userServices = config.services||[];
     
     // temporary until V checks in some stuff:
-    userServices.push(require('../utilities/parse/parse')(config));
+    //userServices.push(require('../utilities/parse/parse')(config));
     /////////////////////////////////////////////////////////////// 
     
     var httpUtils = config.httpUtils;
