@@ -12,33 +12,83 @@ exports = module.exports = function(config, options) {
        // get the latest unity3d build... and return that
        var uri = undefined;
        buildCollection.find({'latest' : true}, function(err, result) {
-          if (err || !result) {
+          if (err || !result || result.length < 1) {
             console.error('[/builds/uploadBuild]', 'could not find latest build in collection:', err||'no build marked latest');
-            res.writeHead(400);
+            res.writeHead(400, {'Content-Type' : 'application/json'});
             res.end(JSON.stringify({'error' : err||'no build marked latest'}));
           } else {
             // get the first result? then return the url as an octet-stream
             var entry = result[0];
-            res.writeHead(200, {'Content-Type' : 'application/octet-stream'});
-            res.write(entry.uri);
+            res.redirect(entry.unity3d);
+          }
+       });
+    });
+    
+    app.get('/builds/:id.unity3d', function(req, res) {
+       // get the build specified by the id (version string)
+       var uri = undefined;
+       var version = req.params['id']||'';
+       buildCollection.find({'version' : version}, function(err, result) {
+          if (err || !result || result.length < 1) {
+              console.error('[builds/id]', 'could not find a build with version string:', version, 'err:', err||'no build with version');
+              res.writeHead(400);
+              res.end(JSON.stringify({error: err||'no build with version exists'}));
+          } else {
+              var entry = result[0];
+              res.redirect(entry.unity3d);
+          }
+       });
+    });
+    
+    app.get('/builds/latest.html', function(req, res) {
+       // get the latest unity3d build... and return that
+       var uri = undefined;
+       buildCollection.find({'latest' : true}, function(err, result) {
+          if (err || !result || result.length < 1) {
+            console.error('[/builds/latest]', 'could not find latest build in collection:', err||'no build marked latest');
+            res.writeHead(400, {'Content-Type' : 'application/json'});
+            res.end(JSON.stringify({'error' : err||'no build marked latest'}));
+          } else {
+            // get the first result? then return the url as an octet-stream
+            var entry = result[0];
+            res.writeHead(307, {'Location' : entry.html});
+            res.end();
+          }
+       });
+    });
+    
+    app.get('/builds/:id.html', function(req, res) {
+       // get the build specified by the id (version string)
+       var uri = undefined;
+       var version = req.params['id']||'';
+       buildCollection.find({'version' : version}, function(err, result) {
+          if (err || !result || result.length < 1) {
+              console.error('[builds/id]', 'could not find a build with version string:', version, 'err:', err||'no build with version');
+              res.writeHead(400);
+              res.end(JSON.stringify({error: err||'no build with version exists'}));
+          } else {
+              var entry = result[0];
+              res.writeHead(307, {'Location' : entry.html});
+              res.end();
           }
        });
     });
     
     app.post('/builds/uploadBuild', function(req, res) {
-       var uri = req.body['location']||undefined;
-       var version = req.body['version']||(new Date()).toDateString();
+       var u3d = req.body['unity3d']||undefined;
+       var html = req.body['html']||undefined;
+       var version = req.body['version']||undefined;
        var latest = req.body['latest']||true;
        var enabled = req.body['enabled']||true;
        
-       console.log('in uploadBuild:', uri, version, latest, enabled);
-       
        var addEntry = function() {
            var build = {
-                uri         : uri,
+                unity3d     : u3d,
+                html        : html,
                 latest      : latest,
-                timestamp   : new Date().toISOString(),
-                enabled     : enabled
+                timestamp   : new Date().toJSON(),
+                enabled     : enabled,
+                version     : version
            };
            buildCollection.insert(build, function(error, result) {
                 if (error) {
@@ -49,9 +99,9 @@ exports = module.exports = function(config, options) {
            });
        };
        
-       if (!uri) {
+       if (!u3d || !html || !version) {
             console.error('[builds/uploadBuild]', 'missing parameter(s)');
-            res.writeHead(400);
+            res.writeHead(400, {'Content-Type' : 'application/json'});
             res.end(JSON.stringify({'error' : 'missing parameter(s)'}));
        } else {
            // alright we need to create a new mongo entry so that we can reference it with FB
