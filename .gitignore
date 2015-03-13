@@ -2,6 +2,9 @@
 logs
 *.log
 
+#cloud9 stuff
+.c9/*
+
 # Runtime data
 pids
 *.pid
@@ -29,3 +32,6 @@ node_modules
 
 # api_engine submodule
 api_engine
+
+#c9 files
+.c9/*
