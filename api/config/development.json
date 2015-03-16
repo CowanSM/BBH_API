@@ -26,5 +26,9 @@
         "app_id"             : "216016135267272",
         "secret_key"        : "c9bbf23c530f9804b41384d85a3e5c19",
         "verification_token": "levverify"
+    },
+    "https"         : {
+        "key_file"          : "/../https_keys/key.pem",
+        "cert_file"         : "/../https_keys/cert.pem"
     }
 }
