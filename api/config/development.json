@@ -1,4 +1,8 @@
 {
+    "operator"  : {
+            "notes"     : "which FB address to report performance to",
+            "address"   : "https://bbhapioperator.firebaseio.com/dev/deployments/"
+    },
     "api_clusters"  : 2,
     "mongo"         : {
             "replicaset"  : true,
