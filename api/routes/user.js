@@ -19,6 +19,11 @@ exports = module.exports = function(config, options)
     var mongoModel = __dirname + '/../../api_engine/base/model';
     var usersCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
     
+    // function for tieing-in session info
+    var getSession = function(user, callback) {
+        return callback({'session' : 'something'});
+    };
+    
     // need a auth-with-facebook endpoint
     app.post('/users/authWithFacebook', function(req, res) {
        var accessToken  = req.body['accessToken']||undefined;
@@ -52,9 +57,11 @@ exports = module.exports = function(config, options)
                         if (err) {
                          console.error('[/authWithFacebook]', 'error upserting into mongo:', err);
                         }
-                        // 200 response
-                        res.writeHead(200);
-                        res.end('ok');
+                        getSession(user, function(user) {
+                            // 200 response
+                            res.writeHead(200);
+                            res.end(JSON.stringify(user));
+                        });
                     });
                 } else {
                     var service = userServices[index];
