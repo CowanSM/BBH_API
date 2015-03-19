@@ -163,6 +163,24 @@ module.exports = function(config) {
         }
     };
     
+    ParseClient.AuthWithMachine = function(uuid, callback) {
+      if (!uuid) {
+        console.error('ParseClient.AuthMachine called with missing parameter');
+        if (callback) callback('invalid params');
+      } else {
+        var url = base_url + 'users';
+        var form = {
+          username    : uuid,
+          password    : 'leviathandevelopment'
+        };
+        doRequest('POST', url, app_id, rest_key, form, function(err, result) {
+          console.dir(err);
+          console.dir(result);
+          callback(err, result);
+        });
+      }
+    };
+    
     ParseClient.CreateUser = function(username, password, callback) {
       if (!username || !password || !callback) {
        console.error('[parse/CreateUser]', 'called with missing parameter(s)');
