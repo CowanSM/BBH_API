@@ -1,7 +1,8 @@
 {
     "operator"  : {
             "notes"     : "which FB address to report performance to",
-            "address"   : "https://bbhapioperator.firebaseio.com/prod/deployments/"
+            "address"   : "https://bbhapioperator.firebaseio.com/prod/deployments/",
+            "sessions"  : "https://bbhapioperator.firebaseio.com/prod/sessions/"
     },
     "api_clusters"  : 14,
     "mongo"         : {
