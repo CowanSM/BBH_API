@@ -3,7 +3,7 @@
             "notes"     : "which FB address to report performance to",
             "address"   : "https://bbhapioperator.firebaseio.com/dev/deployments/"
     },
-    "api_clusters"  : 1,
+    "api_clusters"  : 6,
     "mongo"         : {
             "replicaset"  : true,
             "hosts"       : [
