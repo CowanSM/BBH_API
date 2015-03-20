@@ -32,7 +32,7 @@ exports = module.exports = function(config, options)
         
         config.sessions.createSession(data, function(session)
         {
-            console.log('session : ' + JSON.stringify(session));
+            console.log('session : ' + JSON.stringify([session]));
             
             return callback({session:session});
         });
