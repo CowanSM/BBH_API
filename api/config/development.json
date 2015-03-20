@@ -27,8 +27,8 @@
         "masterKey"         : "GoZ5knBTkw6jicdjOkz0sNIQcU5RefhMRKzspRKr"
     },
     "facebook"      : {
-        "app_id"             : "1564889623775377",
-        "secret_key"        : "11ba11891b2741d3a339134a714376d8",
+        "app_id"             : "216016135267272",
+        "secret_key"        : "c9bbf23c530f9804b41384d85a3e5c19",
         "verification_token": "levverify"
     },
     "https"         : {
