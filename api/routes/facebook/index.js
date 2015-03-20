@@ -6,11 +6,11 @@ exports = module.exports = function(config, options) {
     var Facebook = require('../../utilities/facebook/facebook')(config);
     
     // get our collections
-    var paymentCollection = require(mongoModel)(prefix + 'payemnts', function(){}, config, options);
-    var rtuCollection = require(mongoModel)(prefix + 'rtu', function(){}, config, options);
-    var paymentObjectsCollection = require(mongoModel)(prefix + 'paymentObjects', function(){}, config, options);
+    var receiptCollection = require(mongoModel)(prefix + 'facebookReceipts', function(){}, config, options);
+    var rtuCollection = require(mongoModel)(prefix + 'facebookRTU', function(){}, config, options);
+    var objectsCollection = require(mongoModel)(prefix + 'facebookPaymentObjects', function(){}, config, options);
     var userCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
-    var userAccessToken = "";
+    var transactionCollection = require(mongoModel)(prefix + 'transactions', function(){}, config, options);
 
     var getPaymentsInfo = function(entries) {
         // set up recursive cycle method
@@ -19,7 +19,7 @@ exports = module.exports = function(config, options) {
                 console.log('[facebook/getPaymentsInfo]', 'finished processing payments');
             }
             else {
-                Facebook.graphRequest('GET', '/' + entries[index].id, null, function(err, result) {
+                Facebook.graphRequest('GET', '/v2.2/' + entries[index].id, null, function(err, result) {
                     if (err || !result) {
                         console.error('[facebook/getPaymentsInfo]', 'error with facebook request', err||'no result');
                         // continue cycle
@@ -29,9 +29,69 @@ exports = module.exports = function(config, options) {
                         result._id = result.id;
                         delete result.id;
                         // do update here...
-                        paymentCollection.update({_id : result._id}, result, {upsert : true}, function(err, res) {
-                            if (err) console.log("[facebook/getPaymentsInfo]", "error upserting result", result._id, "err:", err);
-                            cycle(index + 1);
+                        receiptCollection.update({_id : result._id}, result, {upsert : true}, function(err, res) {
+                            if (err) {
+                                console.log("[facebook/getPaymentsInfo]", "error upserting result", result._id, "err:", err);
+                                cycle(index + 1);
+                            } else {
+                                // check to see if the status is completed, if so, add to transactions collection
+                                // then get the object info
+                                var transactionCycle = function(index) {
+                                    if (index < result.actions.length) {
+                                        var action = result.actions[index];
+                                        if (action.type == "charge" && action.status == "completed") {
+                                            var item = result.items[index];
+                                            // get item from objects collection
+                                            var pid = item.product.slice(item.product.lastIndexOf('/')+1);
+                                            objectsCollection.find({_id : pid}, function(err2, obj) {
+                                               if (err2 || !obj) {
+                                                    console.error('[facebook/getPaymentsInfo]', 'could not find object matching id:', pid, err2);
+                                                    transactionCycle(index + 1);
+                                               } else {
+                                                    // get the hard currency value of the object bought
+                                                    obj = obj[0];
+                                                    var transaction = {
+                                                        value       : obj.hardCurrencyValue,
+                                                        timestamp   : (new Date()).toISOString()
+                                                    };
+                                                    // get users current hardcurrency
+                                                    userCollection.find({'uid' : result.user.id}, function(err3, user) {
+                                                        if (err3 || !user) {
+                                                            console.error('[facebook/getPaymentsInfo]', 'could not find user with fbid:', result.user.id, err3); 
+                                                            transactionCycle(index + 1);
+                                                        } else {
+                                                            user = user[0];
+                                                            transaction.previousAmount = user.hardCurrency||0;
+                                                            transaction.newAmount = transaction.previousAmount + transaction.value;
+                                                            transaction.userId = result.user.id;
+                                                            transaction.seen = false;
+                                                            // add to users' currency
+                                                            userCollection.update({'uid' : result.user.id}, {'hardCurrency' : transaction.newAmount}, function(err4, result2) {
+                                                               if (err4) {
+                                                                   console.error('[facebook/getPaymentsInfo]', 'could not update user"s hard currency value', result.user.id, err4);
+                                                                   transaction.user_updated = false;   
+                                                               } else {
+                                                                   transaction.user_updated = true;
+                                                               }
+                                                               transactionCollection.insert(transaction, function(err5, result3) {
+                                                                  if (err5) {
+                                                                    console.error('[facebook/getPaymentsInfo]', 'could not add transaction', transaction, err5);   
+                                                                  }
+                                                                  transactionCycle(index + 1);
+                                                               });
+                                                            });
+                                                        }
+                                                    });
+                                               }
+                                            });
+                                        }
+                                        transactionCycle(index + 1);
+                                    } else {
+                                        // done...?   
+                                    }
+                                };
+                                transactionCycle(0);
+                            }
                         });
                     }
                 });
@@ -47,13 +107,12 @@ exports = module.exports = function(config, options) {
        
        // just stick it into mongo for now
        if (accessToken) {
-           userAccessToken = accessToken;
            var user = {
              access_token       : accessToken,
              fbid               : userId,
              expiresAt          : expirationToken
            };
-           userCollection.update({'fbid' : userId}, user, {upsert : true}, function(err, result) {
+           userCollection.update({'uid' : userId}, user, {upsert : true}, function(err, result) {
               if (err) {
                console.error('error upserting user into db:', err);   
               }
@@ -68,7 +127,9 @@ exports = module.exports = function(config, options) {
     app.all("/facebook/payobject/:id", function(req, res) {
         // need to watch for the challenge request
         var fb_mode = req.query['hub.mode'] || 0;
-        var id = req.param('id')||-1;
+        var id = req.params['id']||-1;
+        
+        console.log('looking for object id:', id);
         
         if (fb_mode) {
             var statusCode = 200;
@@ -92,13 +153,15 @@ exports = module.exports = function(config, options) {
             res.writeHead(statusCode);
             res.end(responseText);
         } else {
+            console.log('looking up in collection');
            // normally perform lookup on the id provided and return that rendered, but for testing just render the template
-           paymentObjectsCollection.find({_id: id}, function(err, result) {
+           objectsCollection.find({_id: String(id)}, function(err, result) {
                if (err || !result) {
                     console.error('[facebook/paymentObject]', 'unable to get object with id', id, 'err:', err||'no object with that id');   
                     res.writeHead(400);
                     res.end('no object found with given id');
                } else {
+                   result = result[0];
                    var data = {
                        title        : result.title,
                        description  : result.description,
@@ -106,6 +169,7 @@ exports = module.exports = function(config, options) {
                        usd          : result.usd,
                        url          : 'http://' + req.get('host') + '/facebook/payobject/' + id,
                    };
+                   console.dir(data);
                    return res.render(__dirname + '/../../templates/object_payment.ejs', data);
                }
            });
