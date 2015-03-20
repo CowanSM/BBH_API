@@ -21,8 +21,21 @@ exports = module.exports = function(config, options)
     var transactionCollection = require(mongoModel)(prefix + 'transactions', function(){}, config, options);
     
     // function for tieing-in session info
-    var getSession = function(user, callback) {
-        return callback({'session' : 'something'});
+    var getSession = function(user, callback) 
+    {
+        //Vedad - add shit here
+        //function to "register" user. needs to return api server address, expiry token, 
+        
+        var data = {
+            uid     : '1234abcd'
+        };
+        
+        config.sessions.createSession(data, function(session)
+        {
+            console.log('session : ' + JSON.stringify(session));
+            
+            return callback({session:session});
+        });
     };
     
     var errorJson = function(msg, code) {
