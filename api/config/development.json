@@ -32,8 +32,8 @@
         "verification_token": "levverify"
     },
     "https"         : {
-        "key_file"          : "/../https_keys/key.pem",
-        "cert_file"         : "/../https_keys/cert.pem",
-	"ca_file"		: "/../https_keys/ca.pem"
+        "key_file"          : "/../../https_keys/key.pem",
+        "cert_file"         : "/../../https_keys/cert.pem",
+	    "ca_file"		    : "/../../https_keys/ca.pem"
     }
 }
