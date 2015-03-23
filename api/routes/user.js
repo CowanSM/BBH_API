@@ -27,12 +27,12 @@ exports = module.exports = function(config, options)
         //function to "register" user. needs to return api server address, expiry token, 
         
         var data = {
-            uid     : '1234abcd'
+            uid     : user.uid
         };
         
         config.sessions.createSession(data, function(session)
         {
-            console.log('session : ' + JSON.stringify([session]));
+            console.log('session : ' + JSON.stringify(session));
             
             return callback({session:session});
         });
