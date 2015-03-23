@@ -30,7 +30,7 @@ exports = module.exports = function(config, options)
     };
     
     app.post('/users/addCurrency', function(req, res) {
-       var id = req.body['id']||undefined;
+       var id = req.body['uid']||undefined;
        var amount = req.body['amount']||undefined;
        var reason = req.body['reason']||undefined;
        var message = req.body['message']||'';
@@ -108,7 +108,7 @@ exports = module.exports = function(config, options)
     });
     
     app.post('/users/spendCurrency', function(req, res) {
-        var id = req.body['id']||undefined;
+        var id = req.body['uid']||undefined;
         var current = req.body['currentAmount']||undefined;
         var amount = req.body['amount']||undefined;
         var item = req.body['product']||undefined;
@@ -163,28 +163,76 @@ exports = module.exports = function(config, options)
         }
     });
     
-    // endpoint to return all un-seen transactions for an user
-    app.post('/users/getUnseenTransactions', function(req, res) {
-       var id = req.body['id']||undefined
+    app.post('/users/devAddTransaction', function(req, res) {
+       var id = req.body['uid']||undefined;
        
        if (!id) {
-            console.error('[users/getUnseenTransactions]', 'missing parameter(s)');
+           console.error('[users/devAddTransaction', 'missing parameter(s)');
+           res.writeHead(400);
+           res.end(errorJson('missing parameter(s)', 104));
+       } else {
+           res.writeHead(200);
+           usersCollection.find({'uid' : id}, function(err, user) {
+              if (err) {
+                  console.error('[users/devAddTransaction]', 'error getting user:', err);
+                  res.end(errorJson('database error', 105));
+              } else if (!user) {
+                  console.error('[users/devAddTransaction]', 'error no user:', id);
+                  res.end(errorJson('database error', 105));
+              } else {
+                  user = user[0];
+                  if (!user.dev) {
+                      res.end(errorJson('user is not a dev', 107));
+                  } else {
+                      var transaction = {
+                          userId        : user.uid,
+                          previousAmount: user.hardCurrency,
+                          value         : 10,
+                          newAmount     : user.hardCurrency + 10,
+                          seen          : false,
+                          timestamp     : (new Date()).toISOString()
+                      };
+                      transactionCollection.insert(transaction, function(err2, result) {
+                          if (err2) {
+                              console.error('[users/devAddTransaction]', 'error inserting transaction:', err2);
+                              res.end(errorJson('database error', 105));
+                          } else {
+                              usersCollection.update({'uid' : id}, {'hardCurrency' : transaction.newAmount}, function(err3, result2) {
+                                  if (err3) {
+                                      console.error('[users/devAddTransaction]', 'error updating user:', err3);
+                                      res.end(errorJson('database error', 105));
+                                  } else {
+                                      res.end(JSON.stringify({'currency' : transaction.newAmount}));
+                                  }
+                              });
+                          }
+                      });
+                  }
+              }
+           });
+       }
+    });
+    
+    // endpoint to return all un-seen transactions for an user
+    app.post('/users/getTransactions', function(req, res) {
+       var id = req.body['uid']||undefined
+       
+       if (!id) {
+            console.error('[users/getTransactions]', 'missing parameter(s)');
             res.writeHead(400);
             res.end(errorJson('missing parameter(s)', 104));
        } else {
-            transactionCollection.find({'uid' : id, 'seen' : false}, function(err, result) {
+            res.writeHead(200);
+            transactionCollection.find({'uid' : id}, function(err, result) {
                if (err) {
-                    console.error('[users/getUnseenTransactions]', 'error getting transactions', err);
-                    res.writeHead(200);
+                    console.error('[users/getTransactions]', 'error getting transactions', err);
                     res.end(errorJson('database error', 105));
                } else if (!result) {
-                    res.writeHead(200);
                     res.end(JSON.stringify({'transactions' : []}));
                } else {
                     // update all of these to have been seen
                     transactionCollection.update({'uid' : id, 'seen' : false}, {'seen' : true}, function(err2, result2) {
-                        if (err2) console.error('[users/getUnseenTransactions]', 'error updating transactions:', err2);
-                        res.writeHead(200);
+                        if (err2) console.error('[users/getTransactions]', 'error updating transactions:', err2);
                         res.end(JSON.stringify({'transactions' : result}));
                     });
                }
@@ -214,7 +262,7 @@ exports = module.exports = function(config, options)
                         delete sresult.name;
                         user[name] = sresult;
                     }
-                    console.log('[/users/authMachine]', 'updating user');
+                    user.dev = true;
                     usersCollection.update({'uid' : uid}, user, {upsert : true}, function(err, result) {
                         if (err) {
                             console.error('[/users/authMachine]', 'error updating user:', err);
