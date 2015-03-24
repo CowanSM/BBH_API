@@ -63,6 +63,11 @@ exports = module.exports = function(config, options)
                    // level up
                    rtext = "Level Up";
                    break;
+                   
+                case 1:
+                    // customer service
+                    rtext = "Customer Service";
+                    break;
                
                default:
                    // code
@@ -81,7 +86,8 @@ exports = module.exports = function(config, options)
                       res.end(errorJson('database error', 105));
                   } else {
                       user = user[0];
-                      if (current != user.hardCurrency) {
+                      var prevAmount = user.hardCurrency||0;
+                      if (current != prevAmount) {
                           console.error('[users/addCurrency]', 'client has different amount of currency locally');
                           res.writeHead(200);
                           res.end(errorJson('client currency out-of-sync', 106));
@@ -90,9 +96,9 @@ exports = module.exports = function(config, options)
                       var transaction = {
                           value         : amount,
                           timestamp     : (new Date()).toISOString(),
-                          previousAmount: user.hardcurrency,
-                          newAmount     : user.hardcurrency + amount,
-                          userId        : id,
+                          previousAmount: prevAmount,
+                          newAmount     : prevAmount + amount,
+                          uid           : id,
                           seen          : seen,
                           reason        : rtext + ' - ' + message
                       };
@@ -140,17 +146,18 @@ exports = module.exports = function(config, options)
                    res.end(errorJson('database error', 105));
                } else {
                    user = user[0];
-                   if (user.hardCurrency != current) {
+                   var prevAmount = user.hardCurrency||0;
+                   if (prevAmount != current) {
                        res.end(errorJson('client currency out-of-sync', 106));
-                   } else if (user.hardCurrency < amount) {
+                   } else if (prevAmount < amount) {
                        res.end(errorJson('client currency out-of-sync - too little', 106));
                    } else {
                        var transaction = {
                           value         : amount,
                           timestamp     : (new Date()).toISOString(),
-                          previousAmount: user.hardcurrency,
-                          newAmount     : user.hardcurrency - amount,
-                          userId        : id,
+                          previousAmount: prevAmount,
+                          newAmount     : prevAmount - amount,
+                          uid            : id,
                           seen          : seen,
                           reason        : item + ' - ' + message
                        };
@@ -179,42 +186,46 @@ exports = module.exports = function(config, options)
     app.post('/users/devAddTransaction', function(req, res) {
        var id = req.body['uid']||undefined;
        
+       console.log('in devAddTransaction');
+       
        if (!id) {
-           console.error('[users/devAddTransaction', 'missing parameter(s)');
+           console.error('[users/devAddTransaction' + ' missing parameter(s)');
            res.writeHead(400);
            res.end(errorJson('missing parameter(s)', 104));
        } else {
            res.writeHead(200);
            usersCollection.find({'uid' : id}, function(err, user) {
               if (err) {
-                  console.error('[users/devAddTransaction]', 'error getting user:', err);
+                  console.error('[users/devAddTransaction]' + ' error getting user: ' + err);
                   res.end(errorJson('database error', 105));
               } else if (!user) {
-                  console.error('[users/devAddTransaction]', 'error no user:', id);
+                  console.error('[users/devAddTransaction]' + ' error no user: ' + id);
                   res.end(errorJson('database error', 105));
               } else {
                   user = user[0];
+                  var prevAmount = user.hardCurrency||0;
                   if (!user.dev) {
                       res.end(errorJson('user is not a dev', 107));
                   } else {
                       var transaction = {
-                          userId        : user.uid,
-                          previousAmount: user.hardCurrency,
+                          uid           : user.uid,
+                          previousAmount: prevAmount,
                           value         : 10,
-                          newAmount     : user.hardCurrency + 10,
+                          newAmount     : prevAmount + 10,
                           seen          : false,
                           timestamp     : (new Date()).toISOString()
                       };
                       transactionCollection.insert(transaction, function(err2, result) {
                           if (err2) {
-                              console.error('[users/devAddTransaction]', 'error inserting transaction:', err2);
+                              console.error('[users/devAddTransaction]' + ' error inserting transaction: ' + err2);
                               res.end(errorJson('database error', 105));
                           } else {
                               usersCollection.update({'uid' : id}, {'hardCurrency' : transaction.newAmount}, function(err3, result2) {
                                   if (err3) {
-                                      console.error('[users/devAddTransaction]', 'error updating user:', err3);
+                                      console.error('[users/devAddTransaction]' + ' error updating user: ' + err3);
                                       res.end(errorJson('database error', 105));
                                   } else {
+                                      console.log('returning success');
                                       res.end(JSON.stringify({'currency' : transaction.newAmount}));
                                   }
                               });
@@ -238,15 +249,16 @@ exports = module.exports = function(config, options)
             res.writeHead(200);
             transactionCollection.find({'uid' : id}, function(err, result) {
                if (err) {
-                    console.error('[users/getTransactions]', 'error getting transactions', err);
+                    console.error('[users/getTransactions]' + 'error getting transactions' + err);
                     res.end(errorJson('database error', 105));
                } else if (!result) {
                     res.end(JSON.stringify({'transactions' : []}));
                } else {
                     // update all of these to have been seen
                     transactionCollection.update({'uid' : id, 'seen' : false}, {'seen' : true}, function(err2, result2) {
-                        if (err2) console.error('[users/getTransactions]', 'error updating transactions:', err2);
-                        res.end(JSON.stringify({'transactions' : result}));
+                        if (err2) console.error('[users/getTransactions]' + 'error updating transactions:' + err2);
+                        console.log('[users/getTransactions]' + ' returning: ' + JSON.stringify(result));
+                        res.end(JSON.stringify({'transactions' : JSON.stringify(result)}));
                     });
                }
             });
