@@ -42,7 +42,7 @@ exports = module.exports = function(config, options)
         return JSON.stringify({'error' : msg, 'error_code' : code});
     };
     
-    app.post('/users/addCurrency', function(req, res) {
+    app.publicpost('/users/addCurrency', function(req, res) {
        var id = req.body['id']||undefined;
        var amount = req.body['amount']||undefined;
        var reason = req.body['reason']||undefined;
@@ -120,7 +120,7 @@ exports = module.exports = function(config, options)
        }
     });
     
-    app.post('/users/spendCurrency', function(req, res) {
+    app.publicpost('/users/spendCurrency', function(req, res) {
         var id = req.body['id']||undefined;
         var current = req.body['currentAmount']||undefined;
         var amount = req.body['amount']||undefined;
@@ -177,7 +177,7 @@ exports = module.exports = function(config, options)
     });
     
     // endpoint to return all un-seen transactions for an user
-    app.post('/users/getUnseenTransactions', function(req, res) {
+    app.publicpost('/users/getUnseenTransactions', function(req, res) {
        var id = req.body['id']||undefined
        
        if (!id) {
@@ -205,7 +205,7 @@ exports = module.exports = function(config, options)
        }
     });
     
-    app.post('/users/authMachine', function(req, res) {
+    app.publicpost('/users/authMachine', function(req, res) {
        var uid = req.body['machine']||undefined;
        
        if (!uid) {
@@ -266,7 +266,7 @@ exports = module.exports = function(config, options)
     });
     
     // need a auth-with-facebook endpoint
-    app.post('/users/authWithFacebook', function(req, res) {
+    app.publicpost('/users/authWithFacebook', function(req, res) {
        var accessToken  = req.body['accessToken']||undefined;
        var fbid         = req.body['fbid']||undefined;
        var expiration   = req.body['expiration']||undefined;
@@ -333,7 +333,7 @@ exports = module.exports = function(config, options)
        }
     });
 
-    app.post('/createUser', function(req, res) 
+    app.publicpost('/createUser', function(req, res) 
     {
        console.log('createUser');
        
@@ -367,7 +367,7 @@ exports = module.exports = function(config, options)
        });
     });
     
-    app.post('/authUser', function(req,res)
+    app.publicpost('/authUser', function(req,res)
     {
        console.log('authUser');
        
@@ -397,7 +397,7 @@ exports = module.exports = function(config, options)
        });
     });
 
-    app.post('/registerPushNotification', function(req, res) 
+    app.publicpost('/registerPushNotification', function(req, res) 
     {
         console.log('registerPushNotification');
         

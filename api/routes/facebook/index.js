@@ -100,7 +100,7 @@ exports = module.exports = function(config, options) {
         cycle(0);
     };
     
-    app.post("/facebook/login", function(req, res) {
+    app.publicpost("/facebook/login", function(req, res) {
        var accessToken = req.params("access_token")||"";
        var userId = req.params("user_id")||"";
        var expirationToken = req.params("expires")||"";
@@ -124,7 +124,7 @@ exports = module.exports = function(config, options) {
     });
     
     // endpoint for getting a payment object from mongo
-    app.all("/facebook/payobject/:id", function(req, res) {
+    app.publicall("/facebook/payobject/:id", function(req, res) {
         // need to watch for the challenge request
         var fb_mode = req.query['hub.mode'] || 0;
         var id = req.params['id']||-1;
@@ -176,7 +176,7 @@ exports = module.exports = function(config, options) {
         }
     });
 
-    app.all("/facebook/payments", function(req, res) {
+    app.publicall("/facebook/payments", function(req, res) {
         var fb_mode = req.query['hub.mode'] || 0;
 
         // set response values
