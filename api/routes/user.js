@@ -287,7 +287,7 @@ exports = module.exports = function(config, options)
        }
     });
     
-    app.post('/users/authMachine', function(req, res) {
+    app.publicpost('/users/authMachine', function(req, res) {
        var uid = req.body['machine']||undefined;
        
        if (!uid) {
@@ -348,7 +348,7 @@ exports = module.exports = function(config, options)
     });
     
     // need a auth-with-facebook endpoint
-    app.post('/users/authWithFacebook', function(req, res) {
+    app.publicpost('/users/authWithFacebook', function(req, res) {
        var accessToken  = req.body['accessToken']||undefined;
        var fbid         = req.body['fbid']||undefined;
        var expiration   = req.body['expiration']||undefined;
@@ -415,7 +415,7 @@ exports = module.exports = function(config, options)
        }
     });
 
-    app.post('/createUser', function(req, res) 
+    app.publicpost('/createUser', function(req, res) 
     {
        console.log('createUser');
        
@@ -449,7 +449,7 @@ exports = module.exports = function(config, options)
        });
     });
     
-    app.post('/authUser', function(req,res)
+    app.publicpost('/authUser', function(req,res)
     {
        console.log('authUser');
        
@@ -479,7 +479,7 @@ exports = module.exports = function(config, options)
        });
     });
 
-    app.post('/registerPushNotification', function(req, res) 
+    app.publicpost('/registerPushNotification', function(req, res) 
     {
         console.log('registerPushNotification');
         
