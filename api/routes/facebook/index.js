@@ -101,9 +101,9 @@ exports = module.exports = function(config, options) {
     };
     
     app.publicpost("/facebook/login", function(req, res) {
-       var accessToken = req.params("access_token")||"";
-       var userId = req.params("user_id")||"";
-       var expirationToken = req.params("expires")||"";
+       var accessToken = req.body["access_token"]||"";
+       var userId = req.body["user_id"]||"";
+       var expirationToken = req.body["expires"]||"";
        
        // just stick it into mongo for now
        if (accessToken) {
