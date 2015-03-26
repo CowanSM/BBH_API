@@ -20,7 +20,7 @@
             "db"          : "bbh_dev",
             "user"        : "apiserver",
             "pwd"         : "leviathan1.1",
-            "prefix"      : "dev_"
+            "prefix"      : "sdev_"
         },
     "parse"         : {
         "applicationId"     : "RFM6TJSgsS1BZi7jwD183EMi3Z9wvQh7SgvjASnJ",

@@ -42,12 +42,34 @@ exports = module.exports = function(config, options)
         return JSON.stringify({'error' : msg, 'error_code' : code});
     };
     
+    app.post('/users/getCurrentCurrencyAmount', function(req, res) {
+       var id = req.body['uid']||undefined;
+       
+       if (!id) {
+           console.error('[users/addCurrency]' + ' endpoint called with missing parameter(s)');
+           res.writeHead(400);
+           res.end(errorJson('missing parameter(s)', 104));
+       } else {
+           res.writeHead(200);
+           usersCollection.find({'uid' : id}, function(err, user) {
+              if (err || !user) {
+                  console.error('[users/getCurrentCurrencyAmount]' + ' could not get user with id ' + id + ' - err: ' + err||'no user');
+                  res.end(errorJson('database error', 105));
+              } else {
+                  user = user[0];
+                  var ret = user.hardCurrency||0;
+                  res.end(JSON.stringify({'currency' : ret}));
+              }
+           });
+       }
+    });
+    
     app.post('/users/addCurrency', function(req, res) {
        var id = req.body['uid']||undefined;
-       var amount = req.body['amount']||undefined;
-       var reason = req.body['reason']||undefined;
+       var amount = parseInt(req.body['amount'])||undefined;
+       var reason = parseInt(req.body['reason'])||undefined;
        var message = req.body['message']||'';
-       var seen = (req.body['seen']||"" == "true");
+       var seen = ((req.body['seen']||"true") == "true");
        var current = req.body['currentAmount']||undefined;
        
        if (!id || !amount || !reason || !current) {
@@ -115,7 +137,7 @@ exports = module.exports = function(config, options)
                                     res.end(errorJson('database error', 105));
                                 } else {
                                     res.writeHead(200);
-                                    res.end(JSON.strinify({'currency' : transaction.newAmount}));
+                                    res.end(JSON.stringify({'currency' : transaction.newAmount}));
                                 }
                              });
                          }
@@ -132,7 +154,7 @@ exports = module.exports = function(config, options)
         var amount = req.body['amount']||undefined;
         var item = req.body['product']||undefined;
         var message = req.body['message']||'';
-        var seen = (req.body['seen']||"true" == "true");
+        var seen = ((req.body['seen']||"true") == "true");
         
         if (!id || !current || !amount || !item) {
             console.error('[users/spendCurrency]', 'missing parameter(s)');
