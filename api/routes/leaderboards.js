@@ -12,7 +12,7 @@ exports = module.exports = function(config, options) {
         return JSON.stringify({'error' : msg, 'error_code' : code});
     };
     
-    app.post('/leaderboards/:id/save', function(req, res) {
+    app.publicpost('/leaderboards/:id/save', function(req, res) {
         var ldb = req.params['id']||undefined;
         var uid = req.body['uid']||undefined;
         var score = parseInt(req.body['score']||-1);
@@ -45,7 +45,7 @@ exports = module.exports = function(config, options) {
         }
     });
     
-    app.post('/leaderboards/:id/global', function(req, res) {
+    app.publicpost('/leaderboards/:id/global', function(req, res) {
         var ldb = req.params['id']||undefined;
         var uid = req.body['uid']||undefined;
         var limit = parseInt(req.body['limit']||-1);
@@ -77,7 +77,7 @@ exports = module.exports = function(config, options) {
         }
     });
     
-    app.post('/leaderboards/:id/friends', function(req, res) {
+    app.publicpost('/leaderboards/:id/friends', function(req, res) {
         var ldb = req.params['id']||undefined;
         var uid = req.body['uid']||undefined;
         var ids = JSON.parse(req.body['friends']||'{}');
@@ -88,6 +88,7 @@ exports = module.exports = function(config, options) {
             res.end(errorJson('missing parameters', 104));
         } else {
             res.writeHead(200);
+            ids.push(uid);
             var collection = require(mongoModel)(prefix + ldb, function(){}, config, options);
             if (!collection) {
                 console.error('[leaderboards/friends could not load collection: ' + prefix + ldb);
@@ -100,12 +101,60 @@ exports = module.exports = function(config, options) {
                     } else if (!result) {
                         res.end(JSON.stringify({'result' : []}));
                     } else {
-                        console.log('[leaderboards/friends] got result:');
-                        console.dir(result);
-                        res.end(JSON.stringify({'result' : result}));
+                        var rankCycle = function(index) {
+                            if (index >= result.length) {
+                                res.end(JSON.stringify({'result' : result}));
+                            } else {
+                                collection.count({'score' : { '$gt' : result[index].score }}, function(rank) {
+                                   result[index].rank = rank;
+                                   rankCycle(index + 1);
+                                });
+                            }
+                        };
+                        rankCycle(0);
                     }
                 });
             }
+        }
+    });
+    
+    app.publicpost('/leaderboards/:id/devFlood', function(req, res) {
+        var ldb = req.params['id']||undefined;
+        var uid = req.body['uid']||undefined;
+        
+        if (!ldb || !uid) {
+            console.error('[leaderboards/devFlood] missing parameters');
+            res.writeHead(400);
+            res.end(errorJson('missing parameters', 104));
+        } else {
+            res.writeHead(200);
+            usersCollection.find({'uid' : uid}, function(err, user) {
+               if (err) {
+                   console.error('[leaderboards/devFlood] no user');
+               } else {
+                   user = user[0];
+                   if (!user.dev) {
+                       res.end(errorJson('non-dev user accessing endpoint', 104));
+                   } else {
+                       // add 10000 entries to mongo for this collection...
+                       var collection = require(mongoModel)(prefix + ldb, function(){}, config, options);
+                       var cycle = function(index) {
+                           if (index < 10000) {
+                               var entry = {
+                                    _id     : index,
+                                    score   : Math.floor((Math.random() * 1000) + 1)
+                               };
+                               collection.insert(entry, function(err, result) {
+                                   cycle(index + 1);
+                               });
+                           } else {
+                               res.end(errorJson('', 0));
+                           }
+                       };
+                       cycle(0);
+                   }
+               }
+            });
         }
     });
 };

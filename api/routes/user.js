@@ -42,7 +42,7 @@ exports = module.exports = function(config, options)
         return JSON.stringify({'error' : msg, 'error_code' : code});
     };
     
-    app.post('/users/getCurrentCurrencyAmount', function(req, res) {
+    app.publicpost('/users/getCurrentCurrencyAmount', function(req, res) {
        var id = req.body['uid']||undefined;
        
        if (!id) {
@@ -315,7 +315,7 @@ exports = module.exports = function(config, options)
                             console.error('[/users/authMachine]', 'error updating user:', err);
                             res.end(errorJson('database error', 105));
                         } else {
-                            getSession(user, function(user) {
+                            getSession(user, function(session) {
                                 // 200 response
                                 res.end(JSON.stringify(user));
                             });
@@ -378,7 +378,7 @@ exports = module.exports = function(config, options)
                         if (err) {
                          console.error('[/authWithFacebook]', 'error upserting into mongo:', err);
                         }
-                        getSession(user, function(user) {
+                        getSession(user, function(session) {
                             // 200 response
                             res.writeHead(200);
                             res.end(JSON.stringify(user));
