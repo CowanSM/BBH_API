@@ -16,7 +16,7 @@ exports = module.exports = function(config, options)
     
     // mongo stuff
     var prefix = config.mongo.prefix||'';
-    var mongoModel = __dirname + '/../../api_engine/base/model';
+    var mongoModel = config.baseModel;
     var usersCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
     var transactionCollection = require(mongoModel)(prefix + 'transactions', function(){}, config, options);
     
@@ -317,7 +317,7 @@ exports = module.exports = function(config, options)
                         } else {
                             getSession(user, function(session) {
                                 // 200 response
-                                res.end(JSON.stringify(user));
+                                res.end(JSON.stringify({'user' : user, 'session' : session}));
                             });
                         }
                     });
