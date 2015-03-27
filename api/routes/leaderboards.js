@@ -5,14 +5,14 @@ exports = module.exports = function(config, options) {
     
     // mongo stuff
     var prefix = config.mongo.prefix||'';
-    var mongoModel = __dirname + '/../../api_engine/base/model';
+    var mongoModel = config.baseModel;
     var usersCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
     
     var errorJson = function(msg, code) {
         return JSON.stringify({'error' : msg, 'error_code' : code});
     };
     
-    app.post('/leaderboards/:id/save', function(req, res) {
+    app.publicpost('/leaderboards/:id/save', function(req, res) {
         var ldb = req.params['id']||undefined;
         var uid = req.body['uid']||undefined;
         var score = parseInt(req.body['score']||-1);
@@ -45,7 +45,7 @@ exports = module.exports = function(config, options) {
         }
     });
     
-    app.post('/leaderboards/:id/global', function(req, res) {
+    app.publicpost('/leaderboards/:id/global', function(req, res) {
         var ldb = req.params['id']||undefined;
         var uid = req.body['uid']||undefined;
         var limit = parseInt(req.body['limit']||-1);
@@ -56,11 +56,12 @@ exports = module.exports = function(config, options) {
             res.end(errorJson('missing parameters', 104));
         } else {
             res.writeHead(200);
-            var collection = require(mongoModel)(prefix + ldb, function(){}, config, options);
-            if (!collection) {
-                console.error('[leaderboards/global] could not retrieve collection ' + prefix + ldb);
-                res.end(errorJson('database error', 105));
-            } else {
+            var collection = require(mongoModel)(prefix + ldb, function(coll){
+                if (!coll) {
+                    console.error('[leaderboards/global] could not retrieve collection ' + prefix + ldb);
+                    res.end(errorJson('database error', 105));
+                    return;
+                }
                 collection.find({}, {'limit' : limit}, function(err, result) {
                     if (err) {
                         console.error('[leaderboards/global] error getting leaderboard: ' + err);
@@ -68,16 +69,16 @@ exports = module.exports = function(config, options) {
                     } else if (!result) {
                         res.end(JSON.stringify({'result' : []}));
                     } else {
-                        console.log('[leaderboards/global] got back leaderboard:');
+                        console.debug('[leaderboards/global] got back leaderboard:');
                         console.dir(result);
                         res.end(JSON.stringify({'result' : result}));
                     }
                 });
-            }
+            }, config, options);
         }
     });
     
-    app.post('/leaderboards/:id/friends', function(req, res) {
+    app.publicpost('/leaderboards/:id/friends', function(req, res) {
         var ldb = req.params['id']||undefined;
         var uid = req.body['uid']||undefined;
         var ids = JSON.parse(req.body['friends']||'{}');
@@ -88,24 +89,25 @@ exports = module.exports = function(config, options) {
             res.end(errorJson('missing parameters', 104));
         } else {
             res.writeHead(200);
-            var collection = require(mongoModel)(prefix + ldb, function(){}, config, options);
-            if (!collection) {
-                console.error('[leaderboards/friends could not load collection: ' + prefix + ldb);
-                res.end(errorJson('no leaderboard by that name', 104));
-            } else {
-                collection.find({'_id' : {'$in' : ids}}, {'sort' : [['score',-1]]}, function(err, result) {
-                    if (err) {
-                        console.error('[leaderboards/friends] error getting leaderboard: ' + err);
-                        res.end(errorJson('database error', 105));
-                    } else if (!result) {
-                        res.end(JSON.stringify({'result' : []}));
-                    } else {
-                        console.log('[leaderboards/friends] got result:');
-                        console.dir(result);
-                        res.end(JSON.stringify({'result' : result}));
-                    }
-                });
-            }
+            var collection = require(mongoModel)(prefix + ldb, function(coll){
+                if (!coll) {
+                    console.error('[leaderboards/friends could not load collection: ' + prefix + ldb);
+                    res.end(errorJson('no leaderboard by that name', 104));
+                } else {
+                    collection.find({'_id' : {'$in' : ids}}, {'sort' : [['score',-1]]}, function(err, result) {
+                        if (err) {
+                            console.error('[leaderboards/friends] error getting leaderboard: ' + err);
+                            res.end(errorJson('database error', 105));
+                        } else if (!result) {
+                            res.end(JSON.stringify({'result' : []}));
+                        } else {
+                            console.log('[leaderboards/friends] got result:');
+                            console.dir(result);
+                            res.end(JSON.stringify({'result' : result}));
+                        }
+                    });
+                }
+            }, config, options);
         }
     });
-};
+}

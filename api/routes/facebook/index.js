@@ -1,6 +1,6 @@
 exports = module.exports = function(config, options) {
     var app = config.app;
-    var mongoModel = __dirname + '/../../../api_engine/base/model';
+    var mongoModel =  config.baseModel;
     var prefix = config.mongo.prefix||'';
     
     var Facebook = require('../../utilities/facebook/facebook')(config);
