@@ -19,6 +19,7 @@ exports = module.exports = function(config, options) {
           } else {
             // get the first result? then return the url as an octet-stream
             var entry = result[0];
+            console.debug("returning: " + entry.unity3d);
             res.redirect(entry.unity3d);
           }
        });
@@ -35,6 +36,7 @@ exports = module.exports = function(config, options) {
               res.end(JSON.stringify({error: err||'no build with version exists'}));
           } else {
               var entry = result[0];
+            console.debug("returning: " + entry.unity3d);
               res.redirect(entry.unity3d);
           }
        });

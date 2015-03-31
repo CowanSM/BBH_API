@@ -317,7 +317,7 @@ exports = module.exports = function(config, options)
                         } else {
                             getSession(user, function(session) {
                                 // 200 response
-                                res.end(JSON.stringify({'user' : user, 'session' : session}));
+                                res.end(JSON.stringify({'user' : user, 'session' : session.session}));
                             });
                         }
                     });
@@ -381,7 +381,7 @@ exports = module.exports = function(config, options)
                         getSession(user, function(session) {
                             // 200 response
                             res.writeHead(200);
-                            res.end(JSON.stringify(user));
+                            res.end(JSON.stringify({'user' : user, 'session' : session.session}));
                         });
                     });
                 } else {
