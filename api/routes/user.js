@@ -414,6 +414,50 @@ exports = module.exports = function(config, options)
            cycle(0);
        }
     });
+    
+    app.post('/user/save', function(req, res) {
+        var uid = req.session.uid||undefined;
+        var data = req.param('data', undefined);
+        if (uid && data) {
+            // it is safe to assume that the user is valid at this point
+            // below may be uneccessary, but it does serve as a form of user validation
+            usersCollection.find({'uid' : uid}, function(err, result) {
+                if (err || !result) {
+                    console.error('[user_data/save]', 'error getting user from table:', err||'no user was found with id');
+                    res.error('database error', {'code' : 105});
+                } else {
+                    // save the data
+                    usersCollection.update({'uid' : uid}, {'data': data}, function(err, result) {
+                       if (err) {
+                           console.error('error saving the data: ' + err);
+                           res.error('database error', {'code' : 105});
+                       } else {
+                           res.end(JSON.stringify({'success' : true}));
+                       }
+                    });
+                }
+            });
+        } else {
+            res.error('missing parameter(s)', {'code' : 104});
+        }
+    });
+    
+    app.post('/user/load', function(req, res) {
+        var uid = req.session.uid||undefined;
+        if (uid) {
+            usersCollection.find({'uid' : uid}, function(err, result) {
+               if (err || !result) {
+                    console.error('error getting user from collection: ' + err||'no user with fbid');
+                    res.error('database error', {'code' : 105});
+               } else {
+                   var user = result[0];
+                   res.end(JSON.stringify({'data' : user.data}));
+               }
+            });
+        } else {
+            res.error('missing parameter(s)', {'code' : 104});
+        }
+    });
 
     app.publicpost('/createUser', function(req, res) 
     {
