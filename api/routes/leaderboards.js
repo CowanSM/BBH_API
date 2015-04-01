@@ -53,9 +53,9 @@ exports = module.exports = function(config, options) {
     });
     
     app.post('/leaderboards/:id/save', function(req, res) {
-        var ldb = req.params['id']||undefined;
-        var uid = req.body['uid']||undefined;
-        var score = parseInt(req.body['score']||-1);
+        var ldb = req.param('id',undefined);
+        var uid = req.param('uid',undefined);
+        var score = parseInt(req.param('score',-1));
         
         if (!ldb || !uid || score < 0) {
             console.error('[leaderboards/save] missing parameter(s)');
@@ -114,11 +114,11 @@ exports = module.exports = function(config, options) {
     });
     
     app.post('/leaderboards/:id/friends', function(req, res) {
-        var ldb = req.params['id']||undefined;
-        var uid = req.body['uid']||undefined;
-        var ids = JSON.parse(req.body['friends']||'{}');
+        var ldb = req.param('id', undefined);
+        var uid = req.param('uid', undefined);
+        var ids = JSON.parse(req.param('friends', '[]'));
         
-        if (!ldb || !uid || ids == {}) {
+        if (!ldb || !uid || !ids) {
             console.error('[leaderboards/friends] missing parameters');
             res.error('missing parameters', {'code' : 104});
         } else {
