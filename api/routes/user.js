@@ -288,15 +288,12 @@ exports = module.exports = function(config, options)
     });
     
     app.publicpost('/users/authMachine', function(req, res) {
-       var uid = req.body['machine']||undefined;
+       var uid = req.param('machine', undefined);
        
        if (!uid) {
-           console.error('[/users/authMachine]', 'called with missing parameter(s)');
-           res.writeHead(400);
-           res.end(errorJson('missing parameter(s)', 104));
+           console.error('missing parameter(s) ' + uid);
+           res.error('missing parameters', {'code' : 104});
        } else {
-           console.log('[/users/authMachine]', 'authing with uid: ' + uid);
-           res.writeHead(200);
            var serviceResults = [];
            var cycle = function(index) {
                if (index >= userServices.length) {
@@ -313,7 +310,7 @@ exports = module.exports = function(config, options)
                     usersCollection.update({'uid' : uid}, user, {upsert : true}, function(err, result) {
                         if (err) {
                             console.error('[/users/authMachine]', 'error updating user:', err);
-                            res.end(errorJson('database error', 105));
+                            res.error('database error', {'code' : 105});
                         } else {
                             getSession(user, function(session) {
                                 // 200 response
@@ -324,7 +321,6 @@ exports = module.exports = function(config, options)
                } else {
                     var service = userServices[index];
                     if (service.AuthWithMachine) {
-                        console.log('[/users/authMachine]', 'running service:', service.name);
                         service.AuthWithMachine(uid, function(err, ret) {
                           if (!err) {
                                var result = {
@@ -337,7 +333,8 @@ exports = module.exports = function(config, options)
                                serviceResults.push(result);
                                cycle(index + 1);
                           } else {
-                               res.end(errorJson('service issue', 105));
+                               console.error('unable to auth with service: ' + service.name);
+                               res.error('service issue', {'code' : 105});
                           }
                         });
                     }
@@ -349,18 +346,16 @@ exports = module.exports = function(config, options)
     
     // need a auth-with-facebook endpoint
     app.publicpost('/users/authWithFacebook', function(req, res) {
-       var accessToken  = req.body['accessToken']||undefined;
-       var fbid         = req.body['fbid']||undefined;
-       var expiration   = req.body['expiration']||undefined;
-       
-       if (!accessToken || !fbid || !expiration) {
-        console.error('[/authWithFacebook]', 'called with missing param(s)');
-        // write back 400
-        res.writeHead(400);
-        res.end(JSON.stringify({'error' : 'mising prameters'}));
-       } else {
-           var serviceResults = [];
-           var cycle = function(index) {
+        var accessToken = req.param('accessToken', undefined);
+        var fbid        = req.param('fbid', undefined);
+        var expiration  = req.param('expiration', undefined);
+        
+        if (!accessToken || !fbid || !expiration) {
+            console.error('missing parameters: ' + fbid + ' ' + accessToken + ' ' + expiration);
+            res.error('missing parameters', {'code' : 104});
+        } else {
+            var serviceResults = [];
+            var cycle = function(index) {
                if (index >= userServices.length) {
                     // finished logging into the various services via facebook...
                     // store info into mongo user table
@@ -376,34 +371,30 @@ exports = module.exports = function(config, options)
                     }
                     usersCollection.update({'uid' : fbid}, user, {upsert : true}, function(err, result) {
                         if (err) {
-                         console.error('[/authWithFacebook]', 'error upserting into mongo:', err);
+                            console.error('error upserting user into mongo: ' + err);
+                            res.error('database error', {'code' : 105});
+                        } else {
+                            getSession(user, function(session) {
+                                res.end(JSON.stringify({'user' : user, 'session' : session.session}));
+                            });
                         }
-                        getSession(user, function(session) {
-                            // 200 response
-                            res.writeHead(200);
-                            res.end(JSON.stringify({'user' : user, 'session' : session.session}));
-                        });
                     });
                 } else {
                     var service = userServices[index];
                     if (service.AuthWithFacebook) {
                         service.AuthWithFacebook(accessToken, fbid, expiration, function(err, ret) {
                           if (!err) {
-                           var result = {
-                             name       : service.name,
-                             username   : ret.username,
-                             session    : ret.token,
-                             uid        : ret.uid
-                           };
-                           if (ret.expiration) result.expires = ret.expiration;
-                           console.log('adding to service results:');
-                           console.dir(result);
-                           serviceResults.push(result);
-                           cycle(index + 1);
+                               var result = {
+                                 name       : service.name,
+                                 username   : ret.username,
+                                 session    : ret.token,
+                                 uid        : ret.uid
+                               };
+                               if (ret.expiration) result.expires = ret.expiration;
+                               serviceResults.push(result);
+                               cycle(index + 1);
                           } else {
-                           // exit with a 400
-                           res.writeHead(400);
-                           res.end(JSON.stringify({'error' : 'failed to login to: ' + service.name}));
+                              res.error('failed to login to: ' + service.name, {'code' : 105});
                           }
                         });
                     } else {
@@ -412,7 +403,7 @@ exports = module.exports = function(config, options)
                }
            };
            cycle(0);
-       }
+        }
     });
     
     app.post('/user/save', function(req, res) {
