@@ -11,12 +11,16 @@
                     {
                         "address" : "ds049191-a0.mongolab.com",
                         "port"    : "49191"
+                    },
+                    {
+                        "address" : "ds049191-a1.mongolab.com",
+                        "port"    : "49191"
                     }
                 ],
-            "db"          : "test",
-            "user"        : "testuser",
-            "pwd"         : "test1.1",
-            "prefix"      : "sdev_"
+            "db"          : "sean_dev",
+            "user"        : "seandev",
+            "pwd"         : "lev1.1",
+            "prefix"      : ""
         },
     "parse"         : {
         "applicationId"     : "RFM6TJSgsS1BZi7jwD183EMi3Z9wvQh7SgvjASnJ",
