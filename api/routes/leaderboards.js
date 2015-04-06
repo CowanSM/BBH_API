@@ -49,7 +49,7 @@ exports = module.exports = function(config, options) {
                                }
                            };
                            cycle(0);
-                       });
+                       }, config, options);
                    }
                }
             });
