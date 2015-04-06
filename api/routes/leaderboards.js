@@ -38,9 +38,11 @@ exports = module.exports = function(config, options) {
                                } else {
                                    var entry = {
                                        uid      : index,
-                                       score    : Math.floor(Math.random() * 100 + 1)
+                                       score    : Math.floor(Math.random() * 100 + 1),
+                                       _id      : index,
+                                       name     : "flood_user" + index
                                    };
-                                   collection.update({'uid' : index}, entry, {'upsert' : true}, function(err, result) {
+                                   collection.update({'_id' : index}, entry, {'upsert' : true}, function(err, result) {
                                       if (err) console.error('error upserting into leaderboard: ' + err);
                                       cycle(index + 1);
                                    });
@@ -73,9 +75,10 @@ exports = module.exports = function(config, options) {
                     var post = {
                         _id     : uid,
                         score   : score,
-                        name    : name
+                        name    : name,
+                        uid     : uid
                     };
-                    collection.update({'uid' : uid}, post, {'upsert' : true}, function(err, result) {
+                    collection.update({'_id' : uid}, post, {'upsert' : true}, function(err, result) {
                         if (err) {
                             console.error('[leaderboards/save] unable to upsert: ' + post);
                             res.error('database error', 105);
@@ -133,17 +136,31 @@ exports = module.exports = function(config, options) {
                     console.error('[leaderboards/friends could not load collection: ' + prefix + ldb);
                     res.error('no valid leaderboard found', {'code' : 104});
                 } else {
-                    collection.find({'_id' : {'$in' : ids}}, {'sort' : [['score',-1]]}, function(err, result) {
-                        if (err) {
-                            console.error('[leaderboards/friends] error getting leaderboard: ' + err);
+                    usersCollection.find({'uid' : {'$in' : ids}}, function(err, users) {
+                        if (err || !users) {
+                            console.error('could not get users: ' + err);
                             res.error('database error', {'code' : 105});
-                        } else if (!result) {
-                            res.end(JSON.stringify({'result' : []}));
-                        } else {
-                            for (var i in result) {
-                                delete result[i]._id;
+                        } else if (users.length > 0) {
+                            var uids = [];
+                            for (var i in users) {
+                                uids.push(users[i].uid);
                             }
-                            res.end(JSON.stringify({'result' : result}));
+                            collection.find({'_id' : {'$in' : uids}}, {'sort' : [['score',-1]]}, function(err, result) {
+                                if (err) {
+                                    console.error('[leaderboards/friends] error getting leaderboard: ' + err);
+                                    res.error('database error', {'code' : 105});
+                                } else if (!result) {
+                                    res.end(JSON.stringify({'result' : []}));
+                                } else {
+                                    for (var i in result) {
+                                        delete result[i]._id;
+                                    }
+                                    res.end(JSON.stringify({'result' : result}));
+                                }
+                            });
+                        } else {
+                            // no friends :(
+                            res.error(JSON.stringify({'result' : []}));
                         }
                     });
                 }
