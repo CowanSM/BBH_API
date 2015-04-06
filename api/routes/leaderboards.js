@@ -93,8 +93,6 @@ exports = module.exports = function(config, options) {
         var uid = req.session.uid||undefined;
         var limit = parseInt(req.param('limit', 50));
         
-        console.debug(ldb + " " + uid + " " + limit);
-        
         if (!ldb || !uid || limit < 1) {
             res.error('missing parameters', {'code' : 104});
         } else {
@@ -111,6 +109,9 @@ exports = module.exports = function(config, options) {
                     } else if (!result) {
                         res.end(JSON.stringify({'result' : []}));
                     } else {
+                        for (var i in result) {
+                            delete result[i]._id;
+                        }
                         res.end(JSON.stringify({'result' : result}));
                     }
                 });
@@ -139,6 +140,9 @@ exports = module.exports = function(config, options) {
                         } else if (!result) {
                             res.end(JSON.stringify({'result' : []}));
                         } else {
+                            for (var i in result) {
+                                delete result[i]._id;
+                            }
                             res.end(JSON.stringify({'result' : result}));
                         }
                     });
