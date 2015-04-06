@@ -10,7 +10,8 @@ exports = module.exports = function(config, options) {
     
     app.post('/leaderboards/:id/devFlood', function(req, res) {
         var ldb = req.param('id', undefined);
-        var uid = req.param('uid', undefined);
+        var uid = req.session.uid||undefined;
+        var count = req.param('count', 20);
         
         if (!ldb || !uid) {
             console.error('missing parameter(s)');
@@ -28,10 +29,11 @@ exports = module.exports = function(config, options) {
                        console.error('non dev-user accessing endpoint');
                        res.error('not authorized for this endpoint', {'code' : 104});
                    } else {
+                       count -= 1;
                        var collection = require(mongoModel)(prefix + ldb, function(coll){
                            // add 20 entries to leaderboard
                            var cycle = function(index) {
-                               if (index > 19) {
+                               if (index > count) {
                                    res.end({});
                                } else {
                                    var entry = {
@@ -55,9 +57,10 @@ exports = module.exports = function(config, options) {
     app.post('/leaderboards/:id/save', function(req, res) {
         var ldb = req.param('id',undefined);
         var uid = req.param('uid',undefined);
+        var name = req.param('displayName', undefined);
         var score = parseInt(req.param('score',-1));
         
-        if (!ldb || !uid || score < 0) {
+        if (!ldb || !uid || score < 0 || !name) {
             console.error('[leaderboards/save] missing parameter(s)');
             res.error('missing parameters', {'code' : 104});
         } else {
@@ -69,7 +72,8 @@ exports = module.exports = function(config, options) {
             } else {
                 var post = {
                     _id     : uid,
-                    score   : score
+                    score   : score,
+                    name    : name
                 };
                 collection.update({'uid' : uid}, post, {'upsert' : true}, function(err, result) {
                     if (err) {
@@ -115,7 +119,7 @@ exports = module.exports = function(config, options) {
     
     app.post('/leaderboards/:id/friends', function(req, res) {
         var ldb = req.param('id', undefined);
-        var uid = req.param('uid', undefined);
+        var uid = req.session.uid||undefined;
         var ids = JSON.parse(req.param('friends', '[]'));
         
         if (!ldb || !uid || !ids) {
