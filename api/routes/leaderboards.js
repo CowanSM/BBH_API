@@ -65,25 +65,26 @@ exports = module.exports = function(config, options) {
             res.error('missing parameters', {'code' : 104});
         } else {
             // write to the collection defind
-            var collection = require(mongoModel)(prefix + ldb, function() {}, config, options);
-            if (!collection) {
-                console.error('leaderboards/save] unable to create/access collection for ' + ldb);
-                res.error('database error', {'code' : 105});
-            } else {
-                var post = {
-                    _id     : uid,
-                    score   : score,
-                    name    : name
-                };
-                collection.update({'uid' : uid}, post, {'upsert' : true}, function(err, result) {
-                    if (err) {
-                        console.error('[leaderboards/save] unable to upsert: ' + post);
-                        res.error('database error', 105);
-                    } else {
-                        res.end({});
-                    }
-                });
-            }
+            var collection = require(mongoModel)(prefix + ldb, function(ready) {
+                if (!ready) {
+                    console.error('leaderboards/save] unable to create/access collection for ' + ldb);
+                    res.error('database error', {'code' : 105});
+                } else {
+                    var post = {
+                        _id     : uid,
+                        score   : score,
+                        name    : name
+                    };
+                    collection.update({'uid' : uid}, post, {'upsert' : true}, function(err, result) {
+                        if (err) {
+                            console.error('[leaderboards/save] unable to upsert: ' + post);
+                            res.error('database error', 105);
+                        } else {
+                            res.end({});
+                        }
+                    });
+                }
+            }, config, options);
         }
     });
     
