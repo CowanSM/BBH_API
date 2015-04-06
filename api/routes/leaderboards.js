@@ -61,7 +61,7 @@ exports = module.exports = function(config, options) {
         var score = parseInt(req.param('score',-1));
         
         if (!ldb || !uid || score < 0 || !name) {
-            console.error('[leaderboards/save] missing parameter(s)');
+            console.error('[leaderboards/save] missing parameter(s): ' + ldb + ' ' + uid + ' ' + name + ' ' + score);
             res.error('missing parameters', {'code' : 104});
         } else {
             // write to the collection defind
