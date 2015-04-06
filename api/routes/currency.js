@@ -96,7 +96,7 @@ exports = module.exports = function(config, options) {
                                                        console.error('error upserting currency: ' + err);
                                                        res.error('database error', {'code' : 105});
                                                    } else {
-                                                       res.end(JSON.stringify({'currency' : amount}));
+                                                       res.end(JSON.stringify({'currency' : currency.amount}));
                                                    }
                                                });
                                            }
