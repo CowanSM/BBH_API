@@ -56,7 +56,7 @@ exports = module.exports = function(config, options) {
     
     app.post('/leaderboards/:id/save', function(req, res) {
         var ldb = req.param('id',undefined);
-        var uid = req.param('uid',undefined);
+        var uid = req.session.uid||undefined;
         var name = req.param('displayName', undefined);
         var score = parseInt(req.param('score',-1));
         
@@ -89,8 +89,8 @@ exports = module.exports = function(config, options) {
     
     app.post('/leaderboards/:id/global', function(req, res) {
         var ldb = req.param('id', undefined);
-        var uid = req.param('uid', undefined);
-        var limit = parseInt(req.param('limit'));
+        var uid = req.session.uid||undefined;
+        var limit = parseInt(req.param('limit', 50));
         
         console.debug(ldb + " " + uid + " " + limit);
         
