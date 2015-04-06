@@ -105,7 +105,7 @@ exports = module.exports = function(config, options) {
                     res.error('database error', {'code' : 105});
                     return;
                 }
-                collection.find({}, {'limit' : limit}, function(err, result) {
+                collection.find({}, {'limit' : limit, 'sort' : {'score' : -1 }}, function(err, result) {
                     if (err) {
                         console.error('[leaderboards/global] error getting leaderboard: ' + err);
                         res.error('database error', {'code' :  105});
@@ -114,6 +114,7 @@ exports = module.exports = function(config, options) {
                     } else {
                         for (var i in result) {
                             delete result[i]._id;
+                            result[i].rank = parseInt(i) + 1;
                         }
                         res.end(JSON.stringify({'result' : result}));
                     }
@@ -152,10 +153,23 @@ exports = module.exports = function(config, options) {
                                 } else if (!result) {
                                     res.end(JSON.stringify({'result' : []}));
                                 } else {
-                                    for (var i in result) {
-                                        delete result[i]._id;
-                                    }
-                                    res.end(JSON.stringify({'result' : result}));
+                                    // get ranks for each
+                                    var cycle = function(index) {
+                                        if (index >= result.length) {
+                                            res.end(JSON.stringify({'result' : result}));
+                                        } else {
+                                            delete result[index]._id;
+                                            collection.count({'score' : { '$gt' : result[index].score }}, function(err, count) {
+                                                if (err) {
+                                                    console.error('error getting count for user: ' + result[index].uid);
+                                                } else {
+                                                    result[index].rank = count + 1;
+                                                }
+                                                cycle(index+1);
+                                            });
+                                        }
+                                    };
+                                    cycle(0);
                                 }
                             });
                         } else {
