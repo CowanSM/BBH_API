@@ -31,10 +31,10 @@ exports = module.exports = function(config, options) {
                    } else {
                        count -= 1;
                        var ids = [
-                           1374688942853304,
-                           1378320352487605,
-                           1380392548945979,
-                           1396232284023518
+                           "1374688942853304",
+                           "1378320352487605",
+                           "1380392548945979",
+                           "1396232284023518"
                        ];
                        var collection = require(mongoModel)(prefix + ldb, function(coll){
                            // add 20 entries to leaderboard
@@ -44,7 +44,7 @@ exports = module.exports = function(config, options) {
                                } else {
                                    var id = ids.pop()||index;
                                    var entry = {
-                                       uid      : id,
+                                       uid      : String(id),
                                        score    : Math.floor(Math.random() * 100 + 1),
                                        _id      : id,
                                        name     : "flood_user" + id
