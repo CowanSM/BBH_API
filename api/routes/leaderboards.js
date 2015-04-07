@@ -147,6 +147,7 @@ exports = module.exports = function(config, options) {
                     console.error('[leaderboards/friends could not load collection: ' + prefix + ldb);
                     res.error('no valid leaderboard found', {'code' : 104});
                 } else {
+                    ids.push(uid);
                     usersCollection.find({'uid' : {'$in' : ids}}, function(err, users) {
                         if (err || !users) {
                             console.error('could not get users: ' + err);
