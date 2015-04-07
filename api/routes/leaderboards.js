@@ -156,17 +156,17 @@ exports = module.exports = function(config, options) {
                             for (var i in users) {
                                 uids.push(users[i].uid);
                             }
-                            collection.find({'_id' : {'$in' : uids}}, {'sort' : [['score',-1]]}, function(err, result) {
+                            collection.find({'_id' : {'$in' : uids}}, {'sort' : {'score' : -1}}, function(err, result) {
                                 if (err) {
                                     console.error('[leaderboards/friends] error getting leaderboard: ' + err);
                                     res.error('database error', {'code' : 105});
                                 } else if (!result) {
-                                    res.end(JSON.stringify({'result' : []}));
+                                    res.end({'result' : []});
                                 } else {
                                     // get ranks for each
                                     var cycle = function(index) {
                                         if (index >= result.length) {
-                                            res.end(JSON.stringify({'result' : result}));
+                                            res.end({'result' : result});
                                         } else {
                                             delete result[index]._id;
                                             collection.count({'score' : { '$gt' : result[index].score }}, function(err, count) {
