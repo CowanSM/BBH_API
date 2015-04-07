@@ -30,19 +30,26 @@ exports = module.exports = function(config, options) {
                        res.error('not authorized for this endpoint', {'code' : 104});
                    } else {
                        count -= 1;
+                       var ids = [
+                           1374688942853304,
+                           1378320352487605,
+                           1380392548945979,
+                           1396232284023518
+                       ];
                        var collection = require(mongoModel)(prefix + ldb, function(coll){
                            // add 20 entries to leaderboard
                            var cycle = function(index) {
                                if (index > count) {
                                    res.end({});
                                } else {
+                                   var id = ids.pop()||index;
                                    var entry = {
-                                       uid      : index,
+                                       uid      : id,
                                        score    : Math.floor(Math.random() * 100 + 1),
-                                       _id      : index,
-                                       name     : "flood_user" + index
+                                       _id      : id,
+                                       name     : "flood_user" + id
                                    };
-                                   collection.update({'_id' : index}, entry, {'upsert' : true}, function(err, result) {
+                                   collection.update({'_id' : id}, entry, {'upsert' : true}, function(err, result) {
                                       if (err) console.error('error upserting into leaderboard: ' + err);
                                       cycle(index + 1);
                                    });
@@ -81,7 +88,7 @@ exports = module.exports = function(config, options) {
                     collection.update({'_id' : uid}, post, {'upsert' : true}, function(err, result) {
                         if (err) {
                             console.error('[leaderboards/save] unable to upsert: ' + post);
-                            res.error('database error', 105);
+                            res.error('database error', {'code' : 105});
                         } else {
                             res.end({});
                         }
@@ -126,7 +133,10 @@ exports = module.exports = function(config, options) {
     app.post('/leaderboards/:id/friends', function(req, res) {
         var ldb = req.param('id', undefined);
         var uid = req.session.uid||undefined;
-        var ids = JSON.parse(req.param('friends', '[]'));
+        var ids = req.param('friends', '[]');
+        
+        console.debug("friend ids are:");
+        console.dir(ids);
         
         if (!ldb || !uid || !ids) {
             console.error('[leaderboards/friends] missing parameters');
@@ -174,7 +184,7 @@ exports = module.exports = function(config, options) {
                             });
                         } else {
                             // no friends :(
-                            res.error(JSON.stringify({'result' : []}));
+                            res.end({'result' : []});
                         }
                     });
                 }
