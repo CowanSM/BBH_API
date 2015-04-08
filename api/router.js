@@ -6,7 +6,8 @@ module.exports = function(config) {
       services  : []  
     };
     
-    config.user.services.push(require(__dirname + '/utilities/parse/parse.js')(config));
+    //Vedad - I hard coded this in the engine router, need to figure out what to do here....
+    // config.user.services.push(require(__dirname + '/utilities/parse/parse.js')(config));
     
     
     return config;
