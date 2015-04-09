@@ -4,7 +4,7 @@
             "address"   : "https://bbhapioperator.firebaseio.com/dev/deployments/",
             "sessions"  : "https://bbhapioperator.firebaseio.com/dev/sessions/"
     },
-    "api_clusters"  : 1,
+    "api_clusters"  : 4,
     "mongo"         : {
             "replicaset"  : true,
             "hosts"       : [
@@ -17,10 +17,10 @@
                         "port"    : "49191"
                     }
                 ],
-            "db"          : "sean_dev",
-            "user"        : "seandev",
-            "pwd"         : "lev1.1",
-            "prefix"      : ""
+            "db"          : "bbh_dev",
+            "user"        : "apiserver",
+            "pwd"         : "leviathan1.1",
+            "prefix"      : "dev_"
         },
     "parse"         : {
         "applicationId"     : "RFM6TJSgsS1BZi7jwD183EMi3Z9wvQh7SgvjASnJ",

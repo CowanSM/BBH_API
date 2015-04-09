@@ -36,7 +36,7 @@ exports = module.exports = function(config, options) {
                         }
                     });
                 }
-            });
+            }, config, options);
         }
     });
     
