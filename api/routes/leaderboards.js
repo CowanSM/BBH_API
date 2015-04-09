@@ -8,6 +8,38 @@ exports = module.exports = function(config, options) {
     var mongoModel = config.baseModel;
     var usersCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
     
+    app.post('/leaderboards/:id/me', function(req, res) {
+        var ldb = req.param('id', undefined);
+        var uid = req.session.uid||undefined;
+        
+        if (!ldb || !uid) {
+            console.error('missing parameters: ' + ldb + ' ' + uid);
+            res.error('missing parameters', {'code' : 104});
+        } else {
+            var collection = require(mongoModel)(prefix + ldb, function(ready) {
+                if (!ready) {
+                    console.error('unable to create/access collection for ' + ldb);
+                    res.error('database error', {'code' : 105});
+                } else {
+                    // get our score from the collection
+                    collection.find({'_id' : uid}, function(err, results) {
+                        if (err) {
+                            console.error('error getting user leaderboard entry: ' + err);
+                            res.error('database error', {'code' : 105});
+                        } else if (!results || results.length < 1) {
+                            // no entry return -1
+                            res.end({'score' : -1});
+                        } else {
+                            // return score from entry
+                            var result = results[0];
+                            res.end({'score' : result.score});
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
     app.post('/leaderboards/:id/devFlood', function(req, res) {
         var ldb = req.param('id', undefined);
         var uid = req.session.uid||undefined;
