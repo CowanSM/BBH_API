@@ -6,7 +6,7 @@ exports = module.exports = function(config, options)
 {
     var app = config.app;
     
-    var userServices = config.services||[];
+    var userServices = config.user.services||[];
     
     // temporary until V checks in some stuff:
     //userServices.push(require('../utilities/parse/parse')(config));
@@ -18,7 +18,6 @@ exports = module.exports = function(config, options)
     var prefix = config.mongo.prefix||'';
     var mongoModel = config.baseModel;
     var usersCollection = require(mongoModel)(prefix + 'users', function(){}, config, options);
-    var transactionCollection = require(mongoModel)(prefix + 'transactions', function(){}, config, options);
     
     // function for tieing-in session info
     var getSession = function(user, callback) 
@@ -41,251 +40,6 @@ exports = module.exports = function(config, options)
     var errorJson = function(msg, code) {
         return JSON.stringify({'error' : msg, 'error_code' : code});
     };
-    
-    app.publicpost('/users/getCurrentCurrencyAmount', function(req, res) {
-       var id = req.body['uid']||undefined;
-       
-       if (!id) {
-           console.error('[users/addCurrency]' + ' endpoint called with missing parameter(s)');
-           res.writeHead(400);
-           res.end(errorJson('missing parameter(s)', 104));
-       } else {
-           res.writeHead(200);
-           usersCollection.find({'uid' : id}, function(err, user) {
-              if (err || !user) {
-                  console.error('[users/getCurrentCurrencyAmount]' + ' could not get user with id ' + id + ' - err: ' + err||'no user');
-                  res.end(errorJson('database error', 105));
-              } else {
-                  user = user[0];
-                  var ret = user.hardCurrency||0;
-                  res.end(JSON.stringify({'currency' : ret}));
-              }
-           });
-       }
-    });
-    
-    app.post('/users/addCurrency', function(req, res) {
-       var id = req.body['uid']||undefined;
-       var amount = parseInt(req.body['amount'])||undefined;
-       var reason = parseInt(req.body['reason'])||undefined;
-       var message = req.body['message']||'';
-       var seen = ((req.body['seen']||"true") == "true");
-       var current = req.body['currentAmount']||undefined;
-       
-       if (!id || !amount || !reason || !current) {
-           console.error('[users/addCurrency]', 'endpoint called with missing parameter(s)');
-           res.writeHead(400);
-           res.end(errorJson('missing parameter(s)', 104));
-       } else {
-           // check that the reason is valid...
-           var rtext = "";
-           var error = undefined;
-           switch (reason) {
-               case 0:
-                   // level up
-                   rtext = "Level Up";
-                   break;
-                   
-                case 1:
-                    // customer service
-                    rtext = "Customer Service";
-                    break;
-               
-               default:
-                   // code
-                   error = "Invalid Reason given: " + reason;
-                   break;
-           }
-           
-           if (error) {
-               res.writeHead(200);
-               res.end(errorJson('invalid reason given', 104));
-           } else {
-               usersCollection.find({'uid' : id}, function(err, user) {
-                  if (err || !user) {
-                      console.error('[users/addCurrency]', 'error looking for user', id, err||'no user found');
-                      res.writeHead(200);
-                      res.end(errorJson('database error', 105));
-                  } else {
-                      user = user[0];
-                      var prevAmount = user.hardCurrency||0;
-                      if (current != prevAmount) {
-                          console.error('[users/addCurrency]', 'client has different amount of currency locally');
-                          res.writeHead(200);
-                          res.end(errorJson('client currency out-of-sync', 106));
-                      }
-                      
-                      var transaction = {
-                          value         : amount,
-                          timestamp     : (new Date()).toISOString(),
-                          previousAmount: prevAmount,
-                          newAmount     : prevAmount + amount,
-                          uid           : id,
-                          seen          : seen,
-                          reason        : rtext + ' - ' + message
-                      };
-                      transactionCollection.insert(transaction, function(err2, result2) {
-                         if (err2) {
-                             console.error('[users/addCurrency]', 'error inserting transaction', err);
-                             res.writeHead(200);
-                             res.end(errorJson('database error', 105));
-                         } else {
-                             usersCollection.update({'uid' : id}, {'hardCurrency' : transaction.newAmount}, function(err3, result3) {
-                                if (err3) {
-                                    console.error('[users/addCurrency]', 'error updating users hard currency:', err3);
-                                    res.writeHead(200);
-                                    res.end(errorJson('database error', 105));
-                                } else {
-                                    res.writeHead(200);
-                                    res.end(JSON.stringify({'currency' : transaction.newAmount}));
-                                }
-                             });
-                         }
-                      });
-                  }
-               });
-           }
-       }
-    });
-    
-    app.post('/users/spendCurrency', function(req, res) {
-        var id = req.body['uid']||undefined;
-        var current = req.body['currentAmount']||undefined;
-        var amount = req.body['amount']||undefined;
-        var item = req.body['product']||undefined;
-        var message = req.body['message']||'';
-        var seen = ((req.body['seen']||"true") == "true");
-        
-        if (!id || !current || !amount || !item) {
-            console.error('[users/spendCurrency]', 'missing parameter(s)');
-            res.writeHead(400);
-            res.end(errorJson('missing parameter(s)', 104));
-        } else {
-            res.writeHead(200);
-            usersCollection.find({'uid' : id}, function(err, user) {
-               if (err || !user) {
-                   console.error('[users/spendCurrency]', 'error getting user', id, err||'no user');
-                   res.end(errorJson('database error', 105));
-               } else {
-                   user = user[0];
-                   var prevAmount = user.hardCurrency||0;
-                   if (prevAmount != current) {
-                       res.end(errorJson('client currency out-of-sync', 106));
-                   } else if (prevAmount < amount) {
-                       res.end(errorJson('client currency out-of-sync - too little', 106));
-                   } else {
-                       var transaction = {
-                          value         : amount,
-                          timestamp     : (new Date()).toISOString(),
-                          previousAmount: prevAmount,
-                          newAmount     : prevAmount - amount,
-                          uid            : id,
-                          seen          : seen,
-                          reason        : item + ' - ' + message
-                       };
-                       transactionCollection.insert(transaction, function(err2, result2) {
-                          if (err2) {
-                              console.error('[users/spendCurrency]', 'error inserting transaction:', err2);
-                              res.end(errorJson('database error', 105));
-                          } else {
-                              // update user collection
-                              usersCollection.update({'uid' : id}, {'hardCurrency' : transaction.newAmount}, function(err3, result3) {
-                                 if (err3) {
-                                     console.error('[users/spendCurrency]', 'error updating user:', err3);
-                                     res.end(errorJson('database error', 105));
-                                 } else {
-                                     res.end(JSON.stringify({'currency' : transaction.newAmount}));
-                                 }
-                              });
-                          }
-                       });
-                   }
-               }
-            });
-        }
-    });
-    
-    app.post('/users/devAddTransaction', function(req, res) {
-       var id = req.body['uid']||undefined;
-       
-       console.log('in devAddTransaction');
-       
-       if (!id) {
-           console.error('[users/devAddTransaction' + ' missing parameter(s)');
-           res.writeHead(400);
-           res.end(errorJson('missing parameter(s)', 104));
-       } else {
-           res.writeHead(200);
-           usersCollection.find({'uid' : id}, function(err, user) {
-              if (err) {
-                  console.error('[users/devAddTransaction]' + ' error getting user: ' + err);
-                  res.end(errorJson('database error', 105));
-              } else if (!user) {
-                  console.error('[users/devAddTransaction]' + ' error no user: ' + id);
-                  res.end(errorJson('database error', 105));
-              } else {
-                  user = user[0];
-                  var prevAmount = user.hardCurrency||0;
-                  if (!user.dev) {
-                      res.end(errorJson('user is not a dev', 107));
-                  } else {
-                      var transaction = {
-                          uid           : user.uid,
-                          previousAmount: prevAmount,
-                          value         : 10,
-                          newAmount     : prevAmount + 10,
-                          seen          : false,
-                          timestamp     : (new Date()).toISOString()
-                      };
-                      transactionCollection.insert(transaction, function(err2, result) {
-                          if (err2) {
-                              console.error('[users/devAddTransaction]' + ' error inserting transaction: ' + err2);
-                              res.end(errorJson('database error', 105));
-                          } else {
-                              usersCollection.update({'uid' : id}, {'hardCurrency' : transaction.newAmount}, function(err3, result2) {
-                                  if (err3) {
-                                      console.error('[users/devAddTransaction]' + ' error updating user: ' + err3);
-                                      res.end(errorJson('database error', 105));
-                                  } else {
-                                      console.log('returning success');
-                                      res.end(JSON.stringify({'currency' : transaction.newAmount}));
-                                  }
-                              });
-                          }
-                      });
-                  }
-              }
-           });
-       }
-    });
-    
-    // endpoint to return all un-seen transactions for an user
-    app.post('/users/getTransactions', function(req, res) {
-       var id = req.body['uid']||undefined
-       
-       if (!id) {
-            console.error('[users/getTransactions]', 'missing parameter(s)');
-            res.writeHead(400);
-            res.end(errorJson('missing parameter(s)', 104));
-       } else {
-            res.writeHead(200);
-            transactionCollection.find({'uid' : id}, function(err, result) {
-               if (err) {
-                    console.error('[users/getTransactions]' + 'error getting transactions' + err);
-                    res.end(errorJson('database error', 105));
-               } else if (!result) {
-                    res.end(JSON.stringify({'transactions' : []}));
-               } else {
-                    // update all of these to have been seen
-                    transactionCollection.update({'uid' : id, 'seen' : false}, {'seen' : true}, function(err2, result2) {
-                        if (err2) console.error('[users/getTransactions]' + 'error updating transactions:' + err2);
-                        console.log('[users/getTransactions]' + ' returning: ' + JSON.stringify(result));
-                        res.end(JSON.stringify({'transactions' : JSON.stringify(result)}));
-                    });
-               }
-            });
-       }
-    });
     
     app.publicpost('/users/authMachine', function(req, res) {
        var uid = req.param('machine', undefined);
@@ -394,6 +148,7 @@ exports = module.exports = function(config, options)
                                serviceResults.push(result);
                                cycle(index + 1);
                           } else {
+                              console.error('failed to login to ' + service.name);
                               res.error('failed to login to: ' + service.name, {'code' : 105});
                           }
                         });
