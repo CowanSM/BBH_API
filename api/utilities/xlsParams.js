@@ -32,7 +32,7 @@
                            console.error('received error: ' + err);
                            config.tunables = {};
                        } else {
-                           resp = resp.substr(resp.indexOf('{') - 1);
+                           resp = resp.substr(resp.indexOf('{'));
                            console.debug('received response: ' + resp);
                            
                            var temp = JSON.parse(resp);
