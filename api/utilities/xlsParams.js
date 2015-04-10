@@ -25,7 +25,7 @@
                         'host'      : html.substr(0, html.indexOf('/')),
                         'path'      : html.substr(html.indexOf('/'))
                     };
-                    config.httpUtils.httpRequest(reqOptions, function(resp, err) {
+                    config.httpUtils.httpsRequest(reqOptions, function(resp, err) {
                        if (err) {
                            console.error('received error: ' + err);
                            config.tunables = {};
