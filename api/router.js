@@ -7,7 +7,7 @@ module.exports = function(config) {
     
     //Vedad - I hard coded this in the engine router, need to figure out what to do here....
     // config.user.services.push(require(__dirname + '/utilities/parse/parse.js')(config))
-    config.tunables = require(__dirname + '/utitlites/xlsParams.js')(config);
+    config.tunables = require(__dirname + '/utilities/xlsParams.js')(config);
     
     
     return config;
