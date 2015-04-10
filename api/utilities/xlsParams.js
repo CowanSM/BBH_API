@@ -18,7 +18,7 @@
                     // get the endpoint
                     var html = latest.html;
                     html = html.substr(0, html.lastIndexOf('/'));
-                    html +=  'StreamingAssets/Resources/SerializedGameData.txt';
+                    html +=  '/StreamingAssets/Resources/SerializedGameData.txt';
                     console.debug('html is: ' + html);
                     // dl the file
                     var reqOptions = {
