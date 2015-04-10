@@ -36,6 +36,8 @@
                            
                            var temp = JSON.parse(resp);
                            
+                           resp = resp.substr(resp.indexOf('{') - 1);
+                           
                            for (var i in temp.Contents) {
                                if (temp.Contents[i].Class == "EngineParams") {
                                    tunables.EngineParams = temp.Contents[i].SerializedData;
