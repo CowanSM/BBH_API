@@ -40,7 +40,7 @@
                                    var contents = JSON.parse(temp.Contents[i].SerializedData);
                                    var engine = {};
                                    for (var i in contents.Contents) {
-                                       if (contents.Contents[i].Value.indexOf('|') > 0) {
+                                       if (contents.Contents[i].Value && contents.Contents[i].Value.indexOf && contents.Contents[i].Value.indexOf('|') > 0) {
                                            // array
                                            engine[contents.Contents[i].Key] = contents.Contents[i].Value.split('|');
                                        } else {
