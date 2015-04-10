@@ -3,7 +3,7 @@
      // create the 'tunable' structure
      var tunables = {};
      
-     var buildsCollection = require(config.basename)(config.mongo.prefix||'' + 'builds', function(ready){
+     var buildsCollection = require(config.baseModel)(config.mongo.prefix||'' + 'builds', function(ready){
          if (!ready) {
              console.error("could not load the builds collection to get serialized data endpoint");
              config.tunables = {};
