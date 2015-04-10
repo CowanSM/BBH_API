@@ -22,7 +22,7 @@
                     console.debug('html is: ' + html);
                     // dl the file
                     var reqOptions = {
-                        'host'      : html.substr(0, html.indexOf('/')),
+                        'host'      : html.substr(0, html.indexOf('/')).replace('https://', ''),
                         'path'      : html.substr(html.indexOf('/'))
                     };
                     config.httpUtils.httpsRequest(reqOptions, function(resp, err) {
