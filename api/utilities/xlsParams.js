@@ -63,9 +63,6 @@
                                }
                            }
                            
-                           // iterate through the contents of each new structure to extract the key/values into a more JS-friendly structure
-                           for (var 
-                           
                            console.dir(tunables);
                            
                            config.tunables = tunables;
