@@ -34,6 +34,17 @@
                        } else {
                            console.debug('received response: ' + resp);
                            
+                           var temp = JSON.parse(resp);
+                           
+                           for (var i in temp.Contents) {
+                               if (temp.Contents[i].Class == "EngineParams") {
+                                   tunables.EngineParams = temp.Contents[i].SerializedData;
+                               } else if (temp.Contents[i].Class == "GameTunables") {
+                                   tunables.GameTunables = temp.Contents[i].SerializedData;
+                               }
+                           }
+                           
+                           console.dir(tunables);
                            
                            config.tunables = tunables;
                        }
