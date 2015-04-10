@@ -33,17 +33,38 @@
                            config.tunables = {};
                        } else {
                            resp = resp.substr(resp.indexOf('{'));
-                           console.debug('received response: ' + resp);
-                           
                            var temp = JSON.parse(resp);
                            
                            for (var i in temp.Contents) {
                                if (temp.Contents[i].Class == "EngineParams") {
-                                   tunables.EngineParams = temp.Contents[i].SerializedData;
+                                   var contents = JSON.parse(temp.Contents[i].SerializedData);
+                                   var engine = {};
+                                   for (var i in contents.Contents) {
+                                       if (contents.Contents[i].Value.indexOf('|') > 0) {
+                                           // array
+                                           engine[contents.Contents[i].Key] = contents.Contents[i].Value.split('|');
+                                       } else {
+                                           engine[contents.Contents[i].Key] = contents.Contents[i].Value;
+                                       }
+                                   }
+                                   tunables.EngineParams = engine;
                                } else if (temp.Contents[i].Class == "GameTunables") {
-                                   tunables.GameTunables = temp.Contents[i].SerializedData;
+                                   var contents = JSON.parse(temp.Contents[i].SerializedData);
+                                   var game = {};
+                                   for (var i in contents.Contents) {
+                                       if (contents.Contents[i].Value.indexOf('|') > 0) {
+                                           // array
+                                           game[contents.Contents[i].Key] = contents.Contents[i].Value.split('|');
+                                       } else {
+                                           game[contents.Contents[i].Key] = contents.Contents[i].Value;
+                                       }
+                                   }
+                                   tunables.GameTunables = game;
                                }
                            }
+                           
+                           // iterate through the contents of each new structure to extract the key/values into a more JS-friendly structure
+                           for (var 
                            
                            console.dir(tunables);
                            
