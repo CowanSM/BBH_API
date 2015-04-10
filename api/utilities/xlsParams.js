@@ -20,9 +20,10 @@
                     html = html.substr(0, html.lastIndexOf('/'));
                     html +=  '/StreamingAssets/Resources/SerializedGameData.txt';
                     console.debug('html is: ' + html);
+                    html = html.replace('https://', '');
                     // dl the file
                     var reqOptions = {
-                        'host'      : html.substr(0, html.indexOf('/')).replace('https://', ''),
+                        'host'      : html.substr(0, html.indexOf('/')),
                         'path'      : html.substr(html.indexOf('/'))
                     };
                     console.dir(reqOptions);
