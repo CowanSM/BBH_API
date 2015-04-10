@@ -32,11 +32,10 @@
                            console.error('received error: ' + err);
                            config.tunables = {};
                        } else {
+                           resp = resp.substr(resp.indexOf('{') - 1);
                            console.debug('received response: ' + resp);
                            
                            var temp = JSON.parse(resp);
-                           
-                           resp = resp.substr(resp.indexOf('{') - 1);
                            
                            for (var i in temp.Contents) {
                                if (temp.Contents[i].Class == "EngineParams") {
