@@ -25,6 +25,7 @@
                         'host'      : html.substr(0, html.indexOf('/')).replace('https://', ''),
                         'path'      : html.substr(html.indexOf('/'))
                     };
+                    console.dir(reqOptions);
                     config.httpUtils.httpsRequest(reqOptions, function(resp, err) {
                        if (err) {
                            console.error('received error: ' + err);
